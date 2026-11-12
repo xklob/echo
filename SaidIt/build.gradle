@@ -16,24 +16,15 @@ repositories {
 }
 
 android {
-    namespace 'eu.mrogalski.saidit'
-    compileSdk 34
+    namespace 'com.klob.echo'
+    compileSdk 36
 
     defaultConfig{
-        applicationId "eu.mrogalski.saidit"
+        applicationId "com.klob.echo"
         minSdk 30
-        targetSdk 34
-        versionCode 15
-        versionName "2.0.0"
-    }
-
-    signingConfigs {
-        release {
-            storeFile file("<relative path>")
-            storePassword "<fill in>"
-            keyAlias "<fill in>"
-            keyPassword "<fill in>"
-        }
+        targetSdk 36
+        versionCode 16
+        versionName "2.1.0-dev"
     }
 
     buildTypes {
@@ -41,7 +32,7 @@ android {
             minifyEnabled true
             proguardFile file('proguard.cfg')
             proguardFile getDefaultProguardFile('proguard-android-optimize.txt')
-            signingConfig signingConfigs.release
+            // Release signing is configured outside source control.
         }
 
         debug {
@@ -49,7 +40,12 @@ android {
         }
     }
     lint {
-        abortOnError false
+        abortOnError true
+        disable "ExpiredTargetSdkVersion"
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     buildFeatures {
         buildConfig true
@@ -60,4 +56,5 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: '*.jar')
     implementation 'androidx.appcompat:appcompat:1.6.1'
+    testImplementation 'junit:junit:4.13.2'
 }

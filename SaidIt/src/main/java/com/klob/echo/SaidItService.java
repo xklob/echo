@@ -1,4 +1,4 @@
-package eu.mrogalski.saidit;
+package com.klob.echo;
 
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
@@ -33,7 +33,7 @@ import java.io.IOException;
 
 import simplesound.pcm.WavAudioFormat;
 import simplesound.pcm.WavFileWriter;
-import static eu.mrogalski.saidit.SaidIt.*;
+import static com.klob.echo.SaidIt.*;
 
 public class SaidItService extends Service {
     static final String TAG = SaidItService.class.getSimpleName();
@@ -210,7 +210,7 @@ public class SaidItService extends Service {
                 File storageDir;
                 if(isExternalStorageWritable()){
                     // Use public storage directory for Android 11+ (min SDK 30)
-                    storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), "Echo");
+                    storageDir = new File(getExternalFilesDir(Environment.DIRECTORY_MUSIC), "Echo");
                 }else{
                     storageDir = new File(getFilesDir(), "Echo");
                 }
@@ -298,7 +298,7 @@ public class SaidItService extends Service {
                 File storageDir;
                 if(isExternalStorageWritable()){
                     // Use public storage directory for Android 11+ (min SDK 30)
-                    storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), "Echo");
+                    storageDir = new File(getExternalFilesDir(Environment.DIRECTORY_MUSIC), "Echo");
                 }else{
                     storageDir = new File(getFilesDir(), "Echo");
                 }

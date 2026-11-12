@@ -1,4 +1,4 @@
-package eu.mrogalski.saidit;
+package com.klob.echo;
 
 import android.content.Context;
 import android.content.Intent;

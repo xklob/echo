@@ -1,4 +1,4 @@
-package eu.mrogalski.saidit;
+package com.klob.echo;
 
 public class ErrorResponseDialog extends ThemedDialog {
     @Override

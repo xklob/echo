@@ -1,4 +1,4 @@
-package eu.mrogalski.saidit;
+package com.klob.echo;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;

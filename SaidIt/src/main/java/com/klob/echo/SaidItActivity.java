@@ -1,4 +1,4 @@
-package eu.mrogalski.saidit;
+package com.klob.echo;
 
 import android.Manifest;
 import android.app.Activity;
@@ -67,44 +67,15 @@ public class SaidItActivity extends Activity {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             // Check if all permissions are granted
             boolean allPermissionsGranted = true;
-            for (int result : grantResults) {
-                if (result != PackageManager.PERMISSION_GRANTED) {
+            for (int i = 0; i < grantResults.length; i++) {
+                if (permissions[i].equals(Manifest.permission.RECORD_AUDIO) && grantResults[i] != PackageManager.PERMISSION_GRANTED) {
                     allPermissionsGranted = false;
                     break;
                 }
             }
             if (allPermissionsGranted) {
                 // All permissions are granted
-                if (Environment.isExternalStorageManager()) {
-                    // Permission already granted
-                    if(storagePermissionDialog != null) {
-                        storagePermissionDialog.dismiss();
-                    }
-                    showFragment();
-                } else {
-                    // Request MANAGE_EXTERNAL_STORAGE permission
-                    storagePermissionDialog = new AlertDialog.Builder(this)
-                            .setTitle(R.string.permission_required)
-                            .setMessage(R.string.permission_required_message)
-                            .setPositiveButton(R.string.allow, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    // Open app settings
-                                    Intent intent = new Intent();
-                                    intent.setAction(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-                                    intent.setData(Uri.fromParts("package", getPackageName(), null));
-                                    startActivity(intent);
-                                }
-                            })
-                            .setNegativeButton(R.string.exit, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    finish();
-                                }
-                            })
-                            .setCancelable(false)
-                            .show();
-                }
+                showFragment();
             } else {
                 if(permissionDeniedDialog == null || !permissionDeniedDialog.isShowing()) {
                     showPermissionDeniedDialog();
