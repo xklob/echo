@@ -43,7 +43,7 @@ Simultaneous microphone + device-audio synchronization and automatic multi-quali
 
 ## Build and validation
 
-JDK 17, Gradle 9.6.0, Android Gradle Plugin 9.5.0, compile/target API 37. Build Tools 36.0.0. Install SDK `platforms;android-37.0` and accept its license, then set `ANDROID_HOME` or an untracked `local.properties`.
+Install ffmpeg for the independent export tests. JDK 17, Gradle 9.6.0, Android Gradle Plugin 9.5.0, compile/target API 37. Build Tools 36.0.0. Install SDK `platforms;android-37.0` and accept its license, then set `ANDROID_HOME` or an untracked `local.properties`.
 
 ```sh
 ./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest

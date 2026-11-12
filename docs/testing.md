@@ -18,7 +18,7 @@ All commands passed locally. Release is minified and unsigned. JNA's unreachable
 
 16 JVM tests pass: 8 history/container/export, 3 scheduling/DST, 2 activity boundaries and 3 relative-motion gestures. Go has 2 auth/hash/durable/idempotency tests; Python has 2 restore/safe-path/idempotency tests.
 
-GitHub Actions builds the app/test APK, runs JVM tests/lint and tests the server/restore utility. It verifies ffmpeg is installed. It does not claim to run a phone emulator. The earlier stage-2 workflow failed during SDK setup because the default obsolete `tools` package disappeared; the workflow now pins a current command-line tools archive and valid SDK package paths.
+GitHub Actions builds the app/test APK, runs JVM tests/lint and tests the server/restore utility. It installs ffmpeg explicitly for independent decoding. It does not claim to run a phone emulator. An intermediate run confirmed the runner image no longer supplied ffmpeg; the workflow now installs it. The earlier stage-2 workflow failed during SDK setup because the default obsolete `tools` package disappeared; the workflow now pins a current command-line tools archive and valid SDK package paths.
 
 ## Android matrix
 
