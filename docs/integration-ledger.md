@@ -26,3 +26,21 @@ Contributor remotes are read-only inputs. Upstream history and GPL-3.0 are retai
 - Remove all-files permission and its launch gate. App-specific storage is the initial destination; SAF follows with the shared exporter.
 - Notification denial does not gate microphone access.
 - Capture lifecycle, snapshots, naming, library and compatibility checks remain active consolidation work, not completed claims.
+
+## Stage 2: shared pipeline, UI and controls
+
+Implemented compressed mono 48 kHz Opus history and direct packet export. Concentus 1.0.2 supplies the codec; VorbisJava 0.8 supplies Ogg framing. The original good-echo writer is not imported. Its CRC/flags problem is superseded, including lacing/stream termination regression checks. Streaming low-level VorbisJava avoids its high-level OpusFile's whole-clip buffering. Android's Ogg MediaMuxer was considered; exact sample trimming and JVM-independent validation favor the portable packet API here.
+
+History uses accounted ten-second blocks, heap-based RAM limits, optional private disk segments and deterministic eviction. An exporter pins immutable blocks while capture continues. RAM has one additional snapshot reserve; disk's total budget reserves half for pins. Counters are updated incrementally, avoiding scans of disk history on every audio frame. Temporary history is separate from saved files.
+
+Replaced competing service/UI/export paths with one capture thread, one export worker, one local library/player, one settings store. Toldya's waveform is adapted with attribution; Material 3 controls and flexible seconds/presets share one selection. Save without speech/classifier state is unconditional. WAV/FLAC decode the lossy history, rather than pretending to retain original PCM quality.
+
+- Scoped private recordings; optional persistent SAF folder copy, verified by readback length, with provider failure reported and local copy kept.
+- Timestamp/unique names, partial-file exclusion, atomic local completion, bounded autosave/continuous categories. Manual clips never rotate.
+- Microphone callback silencing, dead-object/read watchdog, cleanup/retry. Recovery starts a fresh history with visible notice; it does not count inaccessible samples as usable audio or fabricate a continuous timeline across gaps.
+- Quiet foreground status, notification save/stop, opt-in v1 automation, Quick Settings through a visible activity, overnight schedules and battery threshold. Reboot prompts user interaction instead of unsupported microphone autostart. Exact alarm denial uses inexact fallback.
+- No classifier, alternate microphone service, broad storage grant, payment flow, agent framework or automated dashboard imported.
+
+Validation so far: 8 JVM tests; 2 Android 16/API 36 Pixel 9 Pro XL emulator instrumented tests; real debug/lint builds. Independent ffmpeg decodes Android-produced Opus, WAV, FLAC and AAC/M4A. PCM samples are exact for WAV/Opus-decoded output; AAC has codec priming/padding (measured container duration +64 ms on this emulator). No physical-phone validation is claimed. FLAC STREAMINFO duration repair is undergoing revalidation.
+
+Larger optional features remain active work. See the source-feature matrix as it is completed; stage 2 does not mark them finished.

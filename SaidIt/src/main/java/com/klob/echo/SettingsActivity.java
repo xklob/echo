@@ -1,274 +1,90 @@
 package com.klob.echo;
 
-import android.app.Activity;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.content.res.AssetManager;
-import android.content.res.Resources;
-import android.graphics.Rect;
-import android.graphics.Typeface;
-import android.media.AudioFormat;
-import android.media.AudioRecord;
-import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
+import android.app.*;
+import android.content.*;
+import android.media.MediaFormat;
+import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
-import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.widget.*;
+import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.klob.echo.core.ListeningRules;
+import java.util.*;
 
-import eu.mrogalski.StringFormat;
-import eu.mrogalski.android.TimeFormat;
-import eu.mrogalski.android.Views;
-
-public class SettingsActivity extends Activity {
-    static final String TAG = SettingsActivity.class.getSimpleName();
-    private final MemoryOnClickListener memoryClickListener = new MemoryOnClickListener();
-    private final QualityOnClickListener qualityClickListener = new QualityOnClickListener();
-
-
-    final WorkingDialog dialog = new WorkingDialog();
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        Intent intent = new Intent(this, SaidItService.class);
-        bindService(intent, connection, Context.BIND_AUTO_CREATE);
+public final class SettingsActivity extends AppCompatActivity {
+    private android.content.SharedPreferences prefs;
+    private EditText ram, disk, interval, keep, from, to, battery;
+    private SwitchMaterial diskOn, schedule, autosave, fill, automation;
+    private Spinner format, quality;
+    private TextView location, status;
+    private final List<String> formats = new ArrayList<>(Arrays.asList("opus", "wav"));
+    @Override public void onCreate(Bundle state) {
+        super.onCreate(state); prefs = getSharedPreferences(SaidItService.PREFS, MODE_PRIVATE);
+        LinearLayout body = Ui.screen(this); Ui.text(this, body, "Settings", 28);
+        status = Ui.text(this, body, "Stop listening before changing history or quality. Changing these starts a new history.", 14);
+        Ui.text(this, body, "History", 22);
+        ram = number(body, "RAM history budget in MB // max " + SaidItService.maxRamMb(), prefs.getInt("ram_mb", 16));
+        Ui.text(this, body, "Saving can retain up to one additional history budget. Disk mode reserves half its limit for a save in progress.", 14);
+        diskOn = toggle(body, "Use disk history", prefs.getBoolean("disk", false));
+        disk = number(body, "Total disk limit in MB // 16–1024", prefs.getInt("disk_mb", 128));
+        Ui.text(this, body, "Opus history bitrate", 16);
+        quality = spinner(body, Arrays.asList("32 kb/s", "64 kb/s", "96 kb/s")); quality.setSelection(prefs.getInt("bitrate", 32000) == 96000 ? 2 : prefs.getInt("bitrate", 32000) == 64000 ? 1 : 0);
+        if (PlatformEncoder.supported(MediaFormat.MIMETYPE_AUDIO_FLAC)) formats.add("flac");
+        if (PlatformEncoder.supported(MediaFormat.MIMETYPE_AUDIO_AAC)) formats.add("m4a");
+        Ui.text(this, body, "Export format // Opus is stored in Ogg", 16); format = spinner(body, formats); format.setSelection(Math.max(0, formats.indexOf(prefs.getString("format", "opus"))));
+        Ui.text(this, body, "WAV and FLAC decode the compressed history. They cannot restore quality lost during Opus capture.", 14);
+        Ui.text(this, body, "Automatic saves", 22);
+        autosave = toggle(body, "Autosave", prefs.getBoolean("autosave", false)); fill = toggle(body, "Also save when history is 75% full", prefs.getBoolean("autosave_fill", false));
+        interval = number(body, "Save interval / continuous segment seconds // 10–3600", prefs.getInt("autosave_seconds", 300));
+        keep = number(body, "Keep automatic clips per category // 1–500", prefs.getInt("auto_keep", 48));
+        Ui.text(this, body, "Only automatic, continuous and activity clips rotate. Manual clips stay until you delete them.", 14);
+        Ui.text(this, body, "Listening rules", 22);
+        schedule = toggle(body, "Active hours", prefs.getBoolean("schedule", false));
+        from = time(body, "Start // HH:mm", prefs.getInt("schedule_from", 0)); to = time(body, "End // HH:mm", prefs.getInt("schedule_to", 0));
+        battery = number(body, "Minimum battery % // 0 disables", prefs.getInt("battery_min", 0));
+        Ui.text(this, body, "Overnight hours are supported. Equal times mean all day. Android may delay transitions when exact-alarm access is denied. After reboot, tap Echo to resume. STOP always stays stopped.", 14);
+        Ui.text(this, body, "Storage", 22); location = Ui.text(this, body, "", 14); updateLocation();
+        Ui.button(this, body, "CHOOSE COPY FOLDER", () -> startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION), 20));
+        Ui.button(this, body, "USE LOCAL STORAGE ONLY", () -> { releaseTree(); prefs.edit().remove("tree").apply(); updateLocation(); });
+        automation = toggle(body, "Allow external automation", prefs.getBoolean("automation", false));
+        Ui.text(this, body, "External intents can save or stop recording. Android may require opening Echo before starting the microphone.", 14);
+        Ui.button(this, body, "APPLY SETTINGS", this::apply);
+        Ui.button(this, body, "BACK", this::finish);
     }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        unbindService(connection);
+    private void apply() {
+        try {
+            int memory = range(ram, 1, SaidItService.maxRamMb()), diskMb = range(disk, 16, 1024), every = range(interval, 10, 3600), retain = range(keep, 1, 500), min = range(battery, 0, 100);
+            int bitrate = new int[]{32000, 64000, 96000}[quality.getSelectedItemPosition()];
+            boolean historyChanged = memory != prefs.getInt("ram_mb", 16) || diskOn.isChecked() != prefs.getBoolean("disk", false) || diskMb != prefs.getInt("disk_mb", 128) || bitrate != prefs.getInt("bitrate", 32000);
+            if (historyChanged && prefs.getBoolean("enabled", false)) { status.setText("Tap STOP on the main screen before changing history or quality."); return; }
+            prefs.edit().putInt("ram_mb", memory).putBoolean("disk", diskOn.isChecked()).putInt("disk_mb", diskMb).putInt("bitrate", bitrate)
+                .putString("format", formats.get(format.getSelectedItemPosition())).putBoolean("autosave", autosave.isChecked()).putBoolean("autosave_fill", fill.isChecked())
+                .putInt("autosave_seconds", every).putInt("auto_keep", retain).putBoolean("schedule", schedule.isChecked())
+                .putInt("schedule_from", ListeningRules.minute(from.getText().toString())).putInt("schedule_to", ListeningRules.minute(to.getText().toString()))
+                .putInt("battery_min", min).putBoolean("automation", automation.isChecked()).apply();
+            if (prefs.getBoolean("enabled", false)) startService(new Intent(this, SaidItService.class).setAction(SaidItService.ACTION_RULES));
+            status.setText("Settings saved.");
+        } catch (RuntimeException e) { status.setText("Check the number ranges and use HH:mm for times."); }
     }
-
-    SaidItService service;
-    ServiceConnection connection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName className,
-                                       IBinder binder) {
-            SaidItService.BackgroundRecorderBinder typedBinder = (SaidItService.BackgroundRecorderBinder) binder;
-            service = typedBinder.getService();
-            syncUI();
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName arg0) {
-            service = null;
-        }
-    };
-
-    final TimeFormat.Result timeFormatResult = new TimeFormat.Result();
-
-    private void syncUI() {
-        final long maxMemory = Runtime.getRuntime().maxMemory();
-        System.out.println("maxMemory = " + maxMemory);
-        System.out.println("totalMemory = " + Runtime.getRuntime().totalMemory());
-
-        ((Button) findViewById(R.id.memory_low)).setText(StringFormat.shortFileSize(maxMemory / 4));
-        ((Button) findViewById(R.id.memory_medium)).setText(StringFormat.shortFileSize(maxMemory / 2));
-//        ((Button) findViewById(R.id.memory_high)).setText(StringFormat.shortFileSize(maxMemory * 3 / 4));
-        ((Button) findViewById(R.id.memory_high)).setText(StringFormat.shortFileSize((long) (maxMemory * 0.90)));
-
-
-        TimeFormat.naturalLanguage(getResources(), service.getBytesToSeconds() * service.getMemorySize(), timeFormatResult);
-        ((TextView)findViewById(R.id.history_limit)).setText(timeFormatResult.text);
-
-        highlightButtons();
+    private static int range(EditText view, int minimum, int maximum) { int v = Integer.parseInt(view.getText().toString()); if (v < minimum || v > maximum) throw new IllegalArgumentException(); return v; }
+    private EditText number(LinearLayout body, String label, int value) { Ui.text(this, body, label, 14); EditText e = new EditText(this); e.setContentDescription(label); e.setInputType(android.text.InputType.TYPE_CLASS_NUMBER); e.setText(Integer.toString(value)); body.addView(e); return e; }
+    private EditText time(LinearLayout body, String label, int value) { Ui.text(this, body, label, 14); EditText e = new EditText(this); e.setContentDescription(label); e.setSingleLine(true); e.setText(String.format(Locale.ROOT, "%02d:%02d", value / 60, value % 60)); body.addView(e); return e; }
+    private SwitchMaterial toggle(LinearLayout body, String label, boolean value) { SwitchMaterial s = new SwitchMaterial(this); s.setText(label); s.setChecked(value); body.addView(s); return s; }
+    private Spinner spinner(LinearLayout body, List<String> items) { Spinner s = new Spinner(this); s.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items)); body.addView(s); return s; }
+    private void updateLocation() { location.setText("Local recordings // private app storage, removed on uninstall\nCopy folder // " + prefs.getString("tree", "None") + "\nFolder copies are independent. Library rename/delete affects the local copy."); }
+    private void releaseTree() {
+        String old = prefs.getString("tree", "");
+        if (!old.isEmpty()) try { getContentResolver().releasePersistableUriPermission(Uri.parse(old), Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION); } catch (SecurityException ignored) {}
     }
-
-    void highlightButtons() {
-        final long maxMemory = Runtime.getRuntime().maxMemory();
-
-        int button = (int)(service.getMemorySize() / (maxMemory / 4)); // 1 - memory_low; 2 - memory_medium; 3 - memory_high
-        highlightButton(R.id.memory_low, R.id.memory_medium, R.id.memory_high, button);
-
-        int samplingRate = service.getSamplingRate();
-        if(samplingRate >= 44100) button = 3;
-        else if(samplingRate >= 16000) button = 2;
-        else button = 1;
-        highlightButton(R.id.quality_8kHz, R.id.quality_16kHz, R.id.quality_48kHz, button);
-    }
-
-    private void highlightButton(int button1, int button2, int button3, int i) {
-        findViewById(button1).setBackgroundResource(1 == i ? R.drawable.green_button : R.drawable.gray_button);
-        findViewById(button2).setBackgroundResource(2 == i ? R.drawable.green_button : R.drawable.gray_button);
-        findViewById(button3).setBackgroundResource(3 == i ? R.drawable.green_button : R.drawable.gray_button);
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        final AssetManager assets = getAssets();
-        final Resources resources = getResources();
-
-        final float density = resources.getDisplayMetrics().density;
-
-        final Typeface robotoCondensedBold = Typeface.createFromAsset(assets,"RobotoCondensedBold.ttf");
-        final Typeface robotoCondensedRegular = Typeface.createFromAsset(assets, "RobotoCondensed-Regular.ttf");
-
-        final ViewGroup root = (ViewGroup) getLayoutInflater().inflate(R.layout.activity_settings, null);
-        Views.search(root, new Views.SearchViewCallback() {
-            @Override
-            public void onView(View view, ViewGroup parent) {
-                if(view instanceof Button) {
-                    final Button button = (Button) view;
-                    button.setTypeface(robotoCondensedBold);
-                } else if(view instanceof TextView) {
-                    final String tag = (String) view.getTag();
-                    final TextView textView = (TextView) view;
-                    if(tag != null) {
-                        if(tag.equals("bold")) {
-                            textView.setTypeface(robotoCondensedBold);
-                        } else {
-                            textView.setTypeface(robotoCondensedRegular);
-                        }
-                    } else {
-                        textView.setTypeface(robotoCondensedRegular);
-                    }
-                }
-            }
-        });
-
-        root.findViewById(R.id.settings_return).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
-
-        final LinearLayout settingsLayout = (LinearLayout) root.findViewById(R.id.settings_layout);
-
-        final FrameLayout myFrameLayout = new FrameLayout(this) {
-            @Override
-            protected boolean fitSystemWindows(Rect insets) {
-                settingsLayout.setPadding(insets.left, insets.top, insets.right, insets.bottom);
-                return true;
-            }
-        };
-
-        myFrameLayout.addView(root);
-
-        root.findViewById(R.id.memory_low).setOnClickListener(memoryClickListener);
-        root.findViewById(R.id.memory_medium).setOnClickListener(memoryClickListener);
-        root.findViewById(R.id.memory_high).setOnClickListener(memoryClickListener);
-
-        initSampleRateButton(root, R.id.quality_8kHz, 8000, 11025);
-        initSampleRateButton(root, R.id.quality_16kHz, 16000, 22050);
-        initSampleRateButton(root, R.id.quality_48kHz, 48000, 44100);
-
-        //debugPrintCodecs();
-
-        dialog.setDescriptionStringId(R.string.work_preparing_memory);
-
-        setContentView(myFrameLayout);
-    }
-
-    private void debugPrintCodecs() {
-        final int codecCount = MediaCodecList.getCodecCount();
-        for(int i = 0; i < codecCount; ++i) {
-            final MediaCodecInfo info = MediaCodecList.getCodecInfoAt(i);
-            if(!info.isEncoder()) continue;
-            boolean audioFound = false;
-            String types = "";
-            final String[] supportedTypes = info.getSupportedTypes();
-            for(int j = 0; j < supportedTypes.length; ++j) {
-                if(j > 0)
-                    types += ", ";
-                types += supportedTypes[j];
-                if(supportedTypes[j].startsWith("audio")) audioFound = true;
-            }
-            if(!audioFound) continue;
-            Log.d(TAG, "Codec " + i + ": " + info.getName() + " (" + types + ") encoder: " + info.isEncoder());
-        }
-    }
-
-    private void initSampleRateButton(ViewGroup layout, int buttonId, int primarySampleRate, int secondarySampleRate) {
-        Button button = (Button) layout.findViewById(buttonId);
-        button.setOnClickListener(qualityClickListener);
-        if(testSampleRateValid(primarySampleRate)) {
-            button.setText(String.format("%d kHz", primarySampleRate / 1000));
-            button.setTag(primarySampleRate);
-        } else if(testSampleRateValid(secondarySampleRate)) {
-            button.setText(String.format("%d kHz", secondarySampleRate / 1000));
-            button.setTag(secondarySampleRate);
-        } else {
-            button.setVisibility(View.GONE);
-        }
-    }
-
-    private boolean testSampleRateValid(int sampleRate) {
-        final int bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-        return bufferSize > 0;
-    }
-
-    private class MemoryOnClickListener implements View.OnClickListener {
-        @Override
-        public void onClick(View v) {
-            final long memory = getMultiplier(v) * Runtime.getRuntime().maxMemory() / 4;
-            dialog.show(getFragmentManager(), "Preparing memory");
-
-            new Handler().post(new Runnable() {
-                @Override
-                public void run() {
-                    service.setMemorySize(memory);
-                    service.getState(new SaidItService.StateCallback() {
-                        @Override
-                        public void state(boolean listeningEnabled, boolean recording, float memorized, float totalMemory, float recorded) {
-                            syncUI();
-                            if (dialog.isVisible()) dialog.dismiss();
-                        }
-                    });
-                }
-            });
-        }
-
-        private int getMultiplier(View button) {
-            switch (button.getId()) {
-                case R.id.memory_high: return 3;
-                case R.id.memory_medium: return 2;
-                case R.id.memory_low: return 1;
-            }
-            return 0;
-        }
-    }
-
-    private class QualityOnClickListener implements View.OnClickListener {
-        @Override
-        public void onClick(View v) {
-            final int sampleRate = getSampleRate(v);
-            dialog.show(getFragmentManager(), "Preparing memory");
-
-            new Handler().post(new Runnable() {
-                @Override
-                public void run() {
-                    service.setSampleRate(sampleRate);
-                    service.getState(new SaidItService.StateCallback() {
-                        @Override
-                        public void state(boolean listeningEnabled, boolean recording, float memorized, float totalMemory, float recorded) {
-                            syncUI();
-                            if (dialog.isVisible()) dialog.dismiss();
-                        }
-                    });
-                }
-            });
-        }
-
-        private int getSampleRate(View button) {
-            Object tag = button.getTag();
-            if(tag instanceof Integer) {
-                return ((Integer) tag).intValue();
-            }
-            return 8000;
-        }
+    @Override protected void onActivityResult(int code, int result, Intent data) {
+        super.onActivityResult(code, result, data);
+        if (code != 20 || result != RESULT_OK || data == null || data.getData() == null) return;
+        Uri tree = data.getData();
+        try {
+            int grantFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+            getContentResolver().takePersistableUriPermission(tree, grantFlags);
+            if (!tree.toString().equals(prefs.getString("tree", ""))) releaseTree();
+            prefs.edit().putString("tree", tree.toString()).apply(); updateLocation();
+        } catch (SecurityException e) { status.setText("Folder access could not be retained. Choose another folder."); }
     }
 }
