@@ -1,30 +1,135 @@
 [
   {
-    "ref": "toldya/main",
-    "commit": "26e2729ebc0ed84ea0c67bce884938f5e0d7e824"
+    "repository": "mafik/echo",
+    "branch": "master",
+    "local_ref": "upstream/master",
+    "commit": "007fdf30250a11e8432dd6b9edeeff7497cb9aad",
+    "fetched_on": "2026-11-12"
   },
   {
-    "ref": "good/master",
-    "commit": "2b7392908ff89636ea05a5e6cb1a4a8b3568e65b"
+    "repository": "ArturLinnik/toldya",
+    "branch": "main",
+    "local_ref": "toldya/main",
+    "commit": "26e2729ebc0ed84ea0c67bce884938f5e0d7e824",
+    "fetched_on": "2026-11-12"
   },
   {
-    "ref": "oggfix/master",
-    "commit": "b919a722071755245db3952c1c42cad4cef254a2"
+    "repository": "shkarlsson/good-echo",
+    "branch": "master",
+    "local_ref": "good/master",
+    "commit": "2b7392908ff89636ea05a5e6cb1a4a8b3568e65b",
+    "fetched_on": "2026-11-12"
   },
   {
-    "ref": "saidit/master",
-    "commit": "36663288e269ad476574a97a052f31476dcb9446"
+    "repository": "IbrahimF1/good-echo",
+    "branch": "master",
+    "local_ref": "oggfix/master",
+    "commit": "b919a722071755245db3952c1c42cad4cef254a2",
+    "fetched_on": "2026-11-12"
   },
   {
-    "ref": "mike/master",
-    "commit": "51d26f5564fcc9017dd46474f2c2d928970f6bd8"
+    "repository": "spidey000/saidIT",
+    "branch": "master",
+    "local_ref": "saidit/master",
+    "commit": "36663288e269ad476574a97a052f31476dcb9446",
+    "fetched_on": "2026-11-12"
   },
   {
-    "ref": "elliot/master",
-    "commit": "01b48e637466d9c89948e9bcebb14481b3db71ac"
+    "repository": "mikenrafter/echo",
+    "branch": "master",
+    "local_ref": "mike/master",
+    "commit": "51d26f5564fcc9017dd46474f2c2d928970f6bd8",
+    "fetched_on": "2026-11-12"
   },
   {
-    "ref": "copa/master",
-    "commit": "87f28e6a9cd52b1f05f9a9f7adffcdfeffc772dd"
+    "repository": "ElliotBadinger/echo",
+    "branch": "master",
+    "local_ref": "elliot/master",
+    "commit": "01b48e637466d9c89948e9bcebb14481b3db71ac",
+    "fetched_on": "2026-11-12"
+  },
+  {
+    "repository": "copa-sh/echo",
+    "branch": "master",
+    "local_ref": "copa/master",
+    "commit": "87f28e6a9cd52b1f05f9a9f7adffcdfeffc772dd",
+    "fetched_on": "2026-11-12"
+  },
+  {
+    "repository": "copa-sh/echo",
+    "branch": "Java pre-migration",
+    "local_ref": "4a788a5f2f37a78294e52e42228d846f897ca832",
+    "commit": "4a788a5f2f37a78294e52e42228d846f897ca832",
+    "fetched_on": "2026-11-12"
+  },
+  {
+    "repository": "copa-sh/echo",
+    "branch": "shake-delta-and-widest-cameras",
+    "local_ref": "copa/shake-delta-and-widest-cameras",
+    "commit": "2a53be2b1744d9e79e3f46d7b5c158d61a5a951e",
+    "fetched_on": "2026-11-12"
+  },
+  {
+    "repository": "mikenrafter/echo",
+    "branch": "add-device-audio",
+    "local_ref": "mike/add-device-audio",
+    "commit": "3952a14ea564d10bc019094659d8d36b6978195e",
+    "fetched_on": "2026-11-12"
+  },
+  {
+    "repository": "mikenrafter/echo",
+    "branch": "copilot/add-audio-capture-features",
+    "local_ref": "mike/copilot/add-audio-capture-features",
+    "commit": "0704f32a32e89c7bfc7f6e4d0946e7b3a6bf7b7c",
+    "fetched_on": "2026-11-12"
+  },
+  {
+    "repository": "mikenrafter/echo",
+    "branch": "copilot/refactor-application-vsa-architecture",
+    "local_ref": "mike/copilot/refactor-application-vsa-architecture",
+    "commit": "db16409a73ff0b4db3b964bbd47446260f292ee8",
+    "fetched_on": "2026-11-12"
+  },
+  {
+    "repository": "mafik/echo",
+    "branch": "refs/pull/28/head",
+    "local_ref": "upstream/pr-28",
+    "commit": "24b44f84a3bc575e16c1fc2eb2e28febcb221be0",
+    "fetched_on": "2026-11-12"
+  },
+  {
+    "repository": "mafik/echo",
+    "branch": "refs/pull/29/head",
+    "local_ref": "upstream/pr-29",
+    "commit": "6abf028e910eb99efd851ecd65cc4064fa86fcbf",
+    "fetched_on": "2026-11-12"
+  },
+  {
+    "repository": "ADX-CSQ/echo",
+    "branch": "default branch",
+    "local_ref": "research/adx-csq",
+    "commit": "7fed66d353119f1a39c000712f67d90393be0511",
+    "fetched_on": "2026-11-12"
+  },
+  {
+    "repository": "ADX-V3-0-PROJECT/echo",
+    "branch": "default branch",
+    "local_ref": "research/adx-v3",
+    "commit": "7af9d252283c4a77004973ef32b8b15f3458e92a",
+    "fetched_on": "2026-11-12"
+  },
+  {
+    "repository": "wnd-wdb/recho",
+    "branch": "default branch",
+    "local_ref": "research/recho",
+    "commit": "c5a2b13abc49c9e25c58b489058193cd3941e3ca",
+    "fetched_on": "2026-11-12"
+  },
+  {
+    "repository": "joaoftmiranda-hub/echo",
+    "branch": "default branch",
+    "local_ref": "research/joao",
+    "commit": "d3ad8986f7dd391423fe77e202e1965e47d803e9",
+    "fetched_on": "2026-11-12"
   }
 ]

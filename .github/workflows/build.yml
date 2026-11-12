@@ -14,9 +14,24 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 16111833
+          packages: platform-tools platforms;android-37.0 build-tools;36.0.0
+          log-accepted-android-sdk-licenses: false
       - uses: gradle/actions/setup-gradle@v4
+      - run: command -v ffmpeg
       - run: ./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
       - uses: actions/upload-artifact@v4
         with:
           name: echo-debug
           path: SaidIt/build/outputs/apk/debug/*.apk
+  server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.8'
+      - run: go test ./...
+        working-directory: server
+      - run: python3 -m unittest discover -s server -p "test_*.py"

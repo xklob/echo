@@ -28,3 +28,14 @@ proguard/
 # IDEs
 .idea/
 .vscode/
+
+# Review artifacts, server state, local credentials
+dist/
+__pycache__/
+/server/echo
+/server/traces/
+.env
+*.jks
+*.keystore
+keystore.properties
+/server/server

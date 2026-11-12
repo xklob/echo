@@ -1,19 +1,59 @@
-Echo
-====
+# Echo
 
-Time travelling recorder for Android.
-It is free/libre and gratis software.
+Save audio from the past. This fork consolidates the recorder and useful additions from the Echo fork network into one Android app.
 
-Download
----
+- Rolling Opus history in RAM or bounded private disk storage.
+- Flexible lookback, waveform, automatic timestamp filenames, concurrent saves and cancellation.
+- Opus/Ogg, WAV, FLAC and AAC/M4A exports. Platform formats appear only when an encoder is available.
+- Recordings and traces in one library, with playback, sharing, rename and delete.
+- Autosave, rotating continuous clips, active hours, battery threshold, notification actions, Quick Settings and opt-in automation.
+- Optional amplitude activity saves, offline keyword alerts, GPS/GPX, notes, branching surveys, shake camera clips and consent-based screenshots.
+- Optional device-audio capture for apps that permit Android playback capture.
+- Optional authenticated HTTPS sync with verified acknowledgements. Local originals are retained.
 
-* [F-Droid](https://f-droid.org/repository/browse/?fdid=eu.mrogalski.saidit)
+Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original Echo. Current development version: `2.1.0-dev`, versionCode `16`. This is a review build, not a published release.
 
-Architecture
----
+## Use
 
-**SaidItFragment** the main view of the app.
+Tap **LISTEN**, allow microphone access, then choose how far back to save. **STOP** stays stopped. After a reboot or process recreation, open Echo and tap **RESUME**; Android does not permit unrestricted microphone startup from a boot receiver.
 
-**SaidItService** manages a high priority thread that records audio. The thread is a state machine that can be accessed by sending it tasks using Android's Handler (`audioHandler`).
+Settings control history budgets, quality, format, automatic saves and listening rules. Equal start/end hours mean all day; overnight windows are supported. Android can delay schedule transitions when exact-alarm access is unavailable.
 
-**AudioMemory** (not thread-safe) manages the in-memory ring buffer of audio chunks.
+Saved files stay in private app storage. Share recordings before uninstalling. An optional folder picker creates verified additional copies; library rename/delete affects local files. Folder copies remain independent and do not follow automatic local retention. Revoked grants and provider errors are reported while the local recording is kept. No all-files permission is requested.
+
+Automatic retention applies separately to automatic, continuous and activity clips. Manual clips remain until deleted. A continuous segment uses the configured autosave interval; stopping flushes its remaining tail. Only one export runs at once.
+
+History is compressed before saving. WAV and FLAC decode that Opus history; they cannot restore discarded quality. Opus preserves compressed packets without re-encoding. AAC can include encoder priming/padding; the clip JSON records captured duration separately. Approximate file sizes are labelled as estimates.
+
+Microphone interruptions freeze usable history. Recovery starts a new history and reports the reset, so files do not pretend gaps were captured. Switching audio source, history storage or quality also starts new history. Saved clips remain.
+
+## Optional tools
+
+Tools are off until explicitly enabled. STOP turns capture tools off. Camera, location and screen capture request their permissions or native Android consent separately. Capture state remains visible in the foreground notification.
+
+- Activity saves detect loudness, including non-speech. Threshold and pre/post-roll are configurable. Ordinary quiet audio remains saveable.
+- Keyword recognition uses the same captured samples. Install the optional US-English Vosk model from **Optional tools**; recognition stays offline after installation. The approximately 40 MB download and substantial native model RAM are additional to the history budget. Both library and supplied model use Apache-2.0.
+- GPS writes timestamped GPX traces. Audio sample times and GPS fixes share wall-clock associations, not sample-perfect synchronization.
+- Shake capture uses four swings followed by a return to the prior level of motion. The current configuration records silent five-second rear-camera clips. A capture-now button is also available. Camera/microphone concurrency depends on the device.
+- Screenshots require native screen-capture consent and stop with that consent/session. Device-audio capture needs a separate consent session and works only with permitted playback usages/apps. It cannot run alongside screenshots in this build. Microphone/device source changes explicitly reset history.
+- Notes and imported branching surveys are saved as separate traces. See [survey format](docs/survey-format.md).
+- Server sync is opt-in; its token is protected by Android Keystore. See [server](server/README.md). No upload occurs with default settings.
+
+Simultaneous microphone + device-audio synchronization and automatic multi-quality history remain blocked source experiments. No placeholder controls are shipped. See the [integration ledger](docs/integration-ledger.md).
+
+## Build and validation
+
+JDK 17, Gradle 9.6.0, Android Gradle Plugin 9.5.0, compile/target API 37. Build Tools 36.0.0. Install SDK `platforms;android-37.0` and accept its license, then set `ANDROID_HOME` or an untracked `local.properties`.
+
+```sh
+./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+./gradlew connectedDebugAndroidTest
+```
+
+Debug APK: `SaidIt/build/outputs/apk/debug/SaidIt-debug.apk`. The debug key stays outside Git. Keep the same private local debug key for development updates. Future production releases need a separate private signing key and increasing versionCode; switching signing keys requires exporting data and reinstalling this development app. `assembleRelease` produces an unsigned minified APK; release publishing is separate.
+
+See [testing](docs/testing.md), [architecture](docs/architecture.md), [automation](docs/automation.md), [changelog](CHANGELOG.md), and the separate [custom-feature backlog](docs/custom-feature-backlog.md). Device coverage and physical-device gaps are recorded in testing, rather than inferred from a successful build.
+
+## Attribution
+
+Fork of [mafik/echo](https://github.com/mafik/echo), preserving upstream history and [GPL-3.0](LICENSE.txt). Adapted work and dependencies are listed in [third-party notices](docs/third-party-notices.md) and the source ledger. Contributor repositories are read-only integration sources.
