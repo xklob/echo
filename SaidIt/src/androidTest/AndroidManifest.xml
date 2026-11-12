@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <application android:allowAudioPlaybackCapture="true">
+        <activity android:name="com.klob.echo.MicrophoneFixtureActivity" android:exported="true" />
         <activity android:name="com.klob.echo.PlaybackFixtureActivity" android:exported="true" />
         <activity android:name="com.klob.echo.GrantTestDocumentsActivity" android:exported="true" />
         <provider android:name="com.klob.echo.FaultDocumentsProvider" android:authorities="com.klob.echo.test.documents" android:exported="true" android:permission="android.permission.MANAGE_DOCUMENTS" android:grantUriPermissions="true">

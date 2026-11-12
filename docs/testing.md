@@ -14,20 +14,32 @@ Final development toolchain: OpenJDK 17.0.21, Gradle 9.6.0 with distribution SHA
 python3 -m unittest discover -s server -p 'test_*.py'
 ```
 
-All commands passed locally. Release is minified and unsigned. JNA's unreachable desktop AWT references have specific R8 warning exclusions; Vosk/JNA native entry points are retained. Gradle reports future Gradle 10 deprecations. Lint has no fatal errors. Server: Go 1.26.8, standard library only; restore uses Python 3.11+.
+All commands passed locally. [GitHub Android and server validation](https://github.com/xklob/echo/actions/runs/43329148011) also passed for the consolidated implementation. Release is minified and unsigned. JNA's unreachable desktop AWT references have specific R8 warning exclusions; Vosk/JNA native entry points are retained. Gradle reports future Gradle 10 deprecations. Lint has no fatal errors. Server: Go 1.26.8, standard library only; restore uses Python 3.11+.
 
 16 JVM tests pass: 8 history/container/export, 3 scheduling/DST, 2 activity boundaries and 3 relative-motion gestures. Go has 2 auth/hash/durable/idempotency tests; Python has 2 restore/safe-path/idempotency tests.
 
 GitHub Actions builds the app/test APK, runs JVM tests/lint and tests the server/restore utility. It installs ffmpeg explicitly for independent decoding. It does not claim to run a phone emulator. An intermediate run confirmed the runner image no longer supplied ffmpeg; the workflow now installs it. The earlier stage-2 workflow failed during SDK setup because the default obsolete `tools` package disappeared; the workflow now pins a current command-line tools archive and valid SDK package paths.
 
+## Review artifact
+
+The local review APK is `dist/echo-2.1.0-dev-debug.apk`, approximately 52 MiB, application ID `com.klob.echo`, version `2.1.0-dev` / 16. SHA-256:
+
+```text
+0a2432cecb5521f599fadf0e7969e16d2a8be81517f5c4e3d395917a6b205aa4
+```
+
+APK Signature Scheme v2 verification and `zipalign -c -P 16 4` passed. An actual `install -r` retained the complete generated recording library, verified by hashing its archive before and after installation. Native main/recordings screens were inspected. The APK contains neither test fixtures/components nor model weights. The private development signing key remains outside Git; release signing/publishing has not been performed. Further changes after implementation commit `59539b7` affect CI, tests and documentation, not the review app's source/assets.
+
 ## Android matrix
 
 | Target | Actual coverage |
 | --- | --- |
-| Android 11 / API 30, Google APIs x86_64 emulator | All 15 functional device tests pass, plus final actual URI-grant revocation rerun. |
+| Android 11 / API 30, Google APIs x86_64 emulator | All 15 functional device tests pass, plus actual URI-grant revocation and competing-private-microphone checks. |
 | Android 16 / API 36, Google APIs x86_64 emulator, Pixel 9 Pro XL profile | 13 functional tests pass before final quiet-speech/autosave regressions and API-37 upgrade. Capture/save/platform formats, consented screen/playback, camera+mic, schedules, provider faults and sync covered. |
-| Android 17 / API 37, Google APIs x86_64 emulator, Pixel 9 Pro XL profile | All 15 functional tests pass, plus final actual URI-grant revocation rerun. Opt-in screen-off/resource soak runs separately below. |
+| Android 17 / API 37, Google APIs x86_64 emulator, Pixel 9 Pro XL profile | All 15 functional tests pass, plus actual URI-grant revocation and competing-private-microphone checks. Opt-in screen-off/resource soak runs separately below. |
 | Physical Pixel 9 Pro XL / OEM devices | Unavailable. Neither Windows nor WSL ADB lists a physical target. No physical call/Bluetooth/Doze/battery/lens validation is claimed. |
+
+The competing-private-microphone test uses a separate UID and Android privacy-sensitive AudioRecord: usable history freezes while Android silences Echo, then capture resumes with a new history and a visible gap notice. It passed on Android 11 and 17. This tests platform priority handling, not physical telephony or Bluetooth routing.
 
 Device tests exercise platform Opus/WAV/FLAC/AAC output, collisions/invalid destination, repeated start/stop, screen-off sample advancement, continuous final tail, schedule pause/resume with denied exact alarms, manual-stop priority, automatic retention and failed-copy duplicate prevention. The test-only DocumentsProvider injects permission-style failure, ENOSPC/write failure, truncated readback and cancellation; actual Android URI grants are also revoked. Local originals survive failures. Manual files do not rotate.
 
@@ -67,6 +79,18 @@ adb -s emulator-5556 shell am instrument -w \
   com.klob.echo.test/androidx.test.runner.AndroidJUnitRunner
 adb -s emulator-5556 logcat -d -s EchoSoak:I EchoValidation:I '*:S'
 ```
+
+Measured Android 17 run passed in 482.771 s: 360 s core capture followed by 120 s with keyword recognition. [Raw sampled metrics](validation/2026-11-12-soak.csv) are parsed from actual instrumentation log output, not simulated results.
+
+| Measurement | Core + autosave, 360 s | Keywords added, 120 s |
+| --- | --- | --- |
+| Process CPU / wall time, percentage of one emulated CPU | 6.85% | 8.99% including model load |
+| Sampled process PSS | 55.10–56.39 MiB | 181.13–188.87 MiB after model load |
+| Maximum sampled Java used heap | 7.45 MiB | 5.69 MiB |
+| Maximum sampled accounted history | 921,329 bytes | 922,854 bytes |
+| Final captured / retained samples | 17,288,328 / 2,884,488 | 23,053,128 / 2,889,288 |
+
+The one-MiB active history wrapped by 90 s and stayed bounded while capture and 30-second autosaves continued. Sample time advanced at approximately 48 kHz. PSS includes native/shared memory and test-process overhead; Java used heap and history accounting are different quantities. The keyword phase used emulator microphone input, not a continuous real-world speech corpus. Native model memory is visibly much larger than the history budget. This short run supports bounded operation under these conditions, not an hours-long reliability or power claim.
 
 Fixture keyword latency was approximately 1.1 seconds from fixture start for both normal and 50× attenuated speech on Android 17. This is one fixture, not a general recognition accuracy or acoustic latency guarantee. Resource measurements are from x86_64 software-device emulation. They cannot establish battery life, thermal behavior or hours of physical capture. Optional model memory is additional to history limits.
 
