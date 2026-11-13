@@ -2,6 +2,12 @@
 
 Updated: 2026-11-13. The versioned sections below record validation at each release; earlier feature names and measurements describe those historical builds. Emulator results are not physical Pixel or battery certification.
 
+## 2.4.1 documentation release
+
+The README screenshots section is removed. App source, resources, dependencies and shrinker rules are unchanged from 2.4.0; versionName is now 2.4.1 and versionCode is 22. The existing device results below apply to the unchanged implementation; emulator suites were not repeated for this documentation/version update.
+
+The signed release build and release lint pass. The 229,394,733-byte APK retains the production signing certificate and passes signature verification, 16 KiB ZIP/ARM64 alignment checks and all 12 ONNX JNI class-reference checks. SHA-256: `9267668a14643753faa9cd8ee5d1a6935e3a6b95837f04b6a073d1e0663ba05c`.
+
 ## 2.4.0 speech, camera commands and live history
 
 24 JVM tests pass, including bounded live amplitude-history windows, ring wraparound and resets, speech-region boundaries, waveform compaction and camera phrase matching. Debug/release lint and all APK builds pass. Notes and survey creation/import code and their obsolete test were removed; library tests now verify that old note/survey files are retained but excluded from clip context and the capture browser.

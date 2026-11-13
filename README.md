@@ -2,7 +2,7 @@
 
 Save audio from the past. This fork consolidates the recorder and useful additions from the echo fork network into one Android app.
 
-Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original echo. Current release: [2.4.0](https://github.com/xklob/echo/releases/tag/v2.4.0), versionCode `21`.
+Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original echo. Current release: [2.4.1](https://github.com/xklob/echo/releases/tag/v2.4.1), versionCode `22`.
 
 ## Roadmap
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.1 // 2026-11-13
+
+- Remove the screenshots section from the README.
+- Increment the app version for distribution through klobstore. App behavior is unchanged from 2.4.0.
+
 ## 2.4.0 // 2026-11-13
 
 - Warn before taking a microphone already reported in use; warn before screen-sharing/device-audio capture can replace another app’s session. Cancel leaves capture unchanged.
