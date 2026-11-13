@@ -4,24 +4,6 @@ Save audio from the past. This fork consolidates the recorder and useful additio
 
 Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original echo. Current release: [2.4.0](https://github.com/xklob/echo/releases/tag/v2.4.0), versionCode `21`.
 
-## Screenshots
-
-echo 2.4.0 on an Android 17 emulator, using generated demo recordings and GPS data. System, Light and Dark themes are available; System is the default.
-
-<p>
-  <img src="docs/screenshots/record-dark.png" width="280" alt="Record and save recent audio in the black and green theme" />
-  <img src="docs/screenshots/save-clip.png" width="280" alt="Choose recent audio to save, including the remembered custom duration" />
-  <img src="docs/screenshots/library.png" width="280" alt="Audio clips with GPS and speech status" />
-  <img src="docs/screenshots/clip-detail.png" width="280" alt="Scrubbable recording waveform with speech marked in green" />
-  <img src="docs/screenshots/location.png" width="280" alt="Saved GPS route on the recording's map" />
-  <img src="docs/screenshots/tools.png" width="280" alt="Persistent location and spoken camera tools" />
-  <img src="docs/screenshots/settings.png" width="280" alt="Organized recording settings" />
-  <img src="docs/screenshots/camera.png" width="280" alt="Spoken front- and back-camera commands and video duration" />
-  <img src="docs/screenshots/transcript.png" width="280" alt="Offline speech analysis and a transcript with words that seek playback" />
-  <img src="docs/screenshots/speech-settings.png" width="280" alt="Separate automatic speech detection and transcription settings" />
-  <img src="docs/screenshots/record-light.png" width="280" alt="Record screen in the light theme" />
-</p>
-
 ## Roadmap
 
 - [x] A comprehensive UI/UX overhaul, delivered in 2.2.0.
