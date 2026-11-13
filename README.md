@@ -2,16 +2,45 @@
 
 Save audio from the past. This fork consolidates the recorder and useful additions from the Echo fork network into one Android app.
 
-- Rolling Opus history in RAM or bounded private disk storage.
-- Flexible lookback, waveform, automatic timestamp filenames, concurrent saves and cancellation.
-- Opus/Ogg, WAV, FLAC and AAC/M4A exports. Platform formats appear only when an encoder is available.
-- Recordings and traces in one library, with playback, sharing, rename and delete.
-- Autosave, rotating continuous clips, active hours, battery threshold, notification actions, Quick Settings and opt-in automation.
-- Optional amplitude activity saves, offline keyword alerts, GPS/GPX, notes, branching surveys, shake camera clips and consent-based screenshots.
-- Optional device-audio capture for apps that permit Android playback capture.
-- Optional authenticated HTTPS sync with verified acknowledgements. Local originals are retained.
-
 Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original Echo. Current release: [2.1.0](https://github.com/xklob/echo/releases/tag/v2.1.0), versionCode `17`.
+
+## Base features
+
+The original Echo workflow: keep rolling microphone history and save audio from the past. Listening continues in the background until you stop it.
+
+<img src="docs/screenshots/base-recorder.png" width="300" alt="Echo listening with 90 seconds of available history and a one-minute lookback selected" />
+
+The screenshots show the current 2.1.0 interface on an Android 17 emulator, using generated test recordings.
+
+## Features integrated from other forks
+
+- Compressed Opus RAM history, bounded disk storage, memory budgets and direct packet exports.
+- Material 3 controls, waveform, custom lookback, timestamp filenames, save progress and cancellation.
+- Opus/Ogg, WAV, FLAC and AAC/M4A exports, scoped folder copies, and a recordings/trace library with playback, sharing, rename and delete.
+- Autosave, rotating continuous clips, activity saves, active hours, battery threshold, notification actions, Quick Settings and opt-in automation.
+- Optional offline keyword alerts, GPS/GPX, notes, surveys, shake camera clips, consented screenshots and permitted device-audio capture.
+- Optional authenticated HTTPS sync with verified acknowledgements and retained local originals.
+
+Integrated from Toldya, good-echo, saidIT, mikenrafter, ElliotBadinger and copa-sh. Exact source revisions, replacements and remaining blockers are in the [integration ledger](docs/integration-ledger.md).
+
+**History, exports, activity and listening rules**
+
+<p>
+  <img src="docs/screenshots/integrated-history-export.png" width="300" alt="RAM and disk history budgets, Opus bitrate, export format and automatic-save settings" />
+  <img src="docs/screenshots/integrated-rules-activity.png" width="300" alt="Amplitude activity settings, active hours, minimum battery, folder copies and external automation" />
+</p>
+
+**Recordings and optional tools**
+
+<p>
+  <img src="docs/screenshots/integrated-library.png" width="300" alt="Shared library containing a saved recording and timestamped note" />
+  <img src="docs/screenshots/integrated-capture-tools.png" width="300" alt="Optional GPS, shake camera, screenshots, device-audio capture and offline keyword controls" />
+  <img src="docs/screenshots/integrated-notes-sync.png" width="300" alt="Notes, survey import and optional HTTPS server-sync settings with no credentials entered" />
+</p>
+
+## Our features
+
+Reserved for future features developed specifically for this fork. No custom features have been added yet; the [custom-feature backlog](docs/custom-feature-backlog.md) is separate from consolidation work.
 
 ## Use
 

@@ -1,6 +1,6 @@
 # Integration ledger
 
-Audit date: 2026-11-12. Destination: [xklob/echo](https://github.com/xklob/echo), branch `integration/consolidate-forks`. Original master and upstream base remain `007fdf30250a11e8432dd6b9edeeff7497cb9aad`. No contributor repository receives writes. Exact fetched refs, including development branches and small-fork checks, are in [source-refs.json](source-refs.json).
+Audit date: 2026-11-12. Destination: [xklob/echo](https://github.com/xklob/echo). Consolidation was developed on `integration/consolidate-forks` and the tested 2.1.0 release was promoted to `master` by fast-forward. The preserved upstream starting commit is `007fdf30250a11e8432dd6b9edeeff7497cb9aad`. No contributor repository receives writes. Exact fetched refs, including development branches and small-fork checks, are in [source-refs.json](source-refs.json).
 
 ## Source decisions
 
