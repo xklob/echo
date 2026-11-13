@@ -20,7 +20,7 @@ All commands passed locally. [GitHub Android and server validation](https://gith
 
 GitHub Actions builds the app/test APK, runs JVM tests/lint and tests the server/restore utility. It installs ffmpeg explicitly for independent decoding. It does not claim to run a phone emulator. An intermediate run confirmed the runner image no longer supplied ffmpeg; the workflow now installs it. The earlier stage-2 workflow failed during SDK setup because the default obsolete `tools` package disappeared; the workflow now pins a current command-line tools archive and valid SDK package paths.
 
-## Review artifact
+## Original review artifact
 
 The local review APK is `dist/echo-2.1.0-dev-debug.apk`, approximately 52 MiB, application ID `com.klob.echo`, version `2.1.0-dev` / 16. SHA-256:
 
@@ -28,7 +28,7 @@ The local review APK is `dist/echo-2.1.0-dev-debug.apk`, approximately 52 MiB, a
 0a2432cecb5521f599fadf0e7969e16d2a8be81517f5c4e3d395917a6b205aa4
 ```
 
-APK Signature Scheme v2 verification and `zipalign -c -P 16 4` passed. An actual `install -r` retained the complete generated recording library, verified by hashing its archive before and after installation. Native main/recordings screens were inspected. The APK contains neither test fixtures/components nor model weights. The private development signing key remains outside Git; release signing/publishing has not been performed. Further changes after implementation commit `59539b7` affect CI, tests and documentation, not the review app's source/assets.
+APK Signature Scheme v2 verification and `zipalign -c -P 16 4` passed. An actual `install -r` retained the complete generated recording library, verified by hashing its archive before and after installation. Native main/recordings screens were inspected. The APK contains neither test fixtures/components nor model weights. The private development signing key remains outside Git; that review build predates production signing. Follow-up validation commits before release preparation changed CI, tests and documentation rather than the app implementation.
 
 ## Android matrix
 
@@ -111,3 +111,13 @@ Use the distinct development application ID. Preserve/share any desired recordin
 - Add Quick Settings tile and use documented v1 automation after explicit opt-in. Test excessive/invalid values and Android background-start rejection/resume path.
 
 These physical checks and the two source experiments in [the ledger](integration-ledger.md) are remaining validation/integration limits, not custom feature requests.
+
+## Signed 2.1.0 release preparation
+
+The production APK is `echo-2.1.0.apk`, versionCode 17, using a dedicated RSA-4096 release key kept outside Git. The release certificate SHA-256 is `9830b437d226aa247e46793d75dd12b6e927b1bccc448551958490bdbebd91bc`.
+
+APK SHA-256: `fa430c96542216a065151dbe5a190f28727cd5679ca0666120df887cc16dba9e`. APK signature and 16 KiB ZIP alignment checks pass. The normal production build was rebuilt after the isolated upgrade fixture, and matched the prepared release APK byte for byte. Debug/release lint, 16 JVM tests and both build variants passed.
+
+A disposable Android 17 emulator runs a lower-version verification fixture signed with this same production key. It uses the minified release implementation with test-only version metadata; it is not a historical public release. Native LISTEN/SAVE/STOP recorded a completed 53,968-byte Opus clip, independently decoded by ffmpeg (48 kHz mono, approximately 9.92 s). This generated recording is retained for the real Klobstore update-to-code-17 preservation check. No user's existing app or recordings are removed.
+
+The production certificate differs from the earlier debug review APK. Android correctly disallows replacing that debug installation in place; users must export wanted data before switching certificates. Future production releases preserve the production key. Physical Pixel validation remains outstanding.

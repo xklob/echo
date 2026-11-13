@@ -11,7 +11,7 @@ Save audio from the past. This fork consolidates the recorder and useful additio
 - Optional device-audio capture for apps that permit Android playback capture.
 - Optional authenticated HTTPS sync with verified acknowledgements. Local originals are retained.
 
-Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original Echo. Current development version: `2.1.0-dev`, versionCode `16`. This is a review build, not a published release.
+Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original Echo. Current release: [2.1.0](https://github.com/xklob/echo/releases/tag/v2.1.0), versionCode `17`.
 
 ## Use
 
@@ -50,7 +50,15 @@ Install ffmpeg for the independent export tests. JDK 17, Gradle 9.6.0, Android G
 ./gradlew connectedDebugAndroidTest
 ```
 
-Debug APK: `SaidIt/build/outputs/apk/debug/SaidIt-debug.apk`. The debug key stays outside Git. Keep the same private local debug key for development updates. Future production releases need a separate private signing key and increasing versionCode; switching signing keys requires exporting data and reinstalling this development app. `assembleRelease` produces an unsigned minified APK; release publishing is separate.
+Debug APK: `SaidIt/build/outputs/apk/debug/SaidIt-debug.apk`. Debug and release builds use different certificates. Export any wanted data from an earlier development build before replacing it with the production app; Android will reject an in-place update across those certificates. Future production updates retain the dedicated release certificate and increase versionCode.
+
+For a signed minified release, set `ECHO_SIGNING_PROPERTIES` to a private properties file containing `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`. Resolve the keystore path relative to that file. Keep the key and credentials outside Git:
+
+```sh
+ECHO_SIGNING_PROPERTIES=/private/path/signing.properties ./gradlew assembleRelease lintRelease
+```
+
+Without signing configuration, release builds remain unsigned. Klobstore tracks the standalone signed APK from GitHub Releases.
 
 See [testing](docs/testing.md), [architecture](docs/architecture.md), [automation](docs/automation.md), [changelog](CHANGELOG.md), and the separate [custom-feature backlog](docs/custom-feature-backlog.md). Device coverage and physical-device gaps are recorded in testing, rather than inferred from a successful build.
 

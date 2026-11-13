@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1.0-dev // integration review build // 2026-11-12
+## 2.1.0 // 2026-11-12
 
 - Separate `com.klob.echo` identity with original upstream history/GPL retained.
 - One compressed capture/history/export pipeline, RAM and bounded disk history, pinned concurrent snapshots, waveform and flexible lookback.
@@ -12,4 +12,4 @@
 - Modern Android foreground/permission handling; supported user resumption after reboot/process loss; visible microphone recovery/history reset.
 - Real compilation/tests/independent decoders and CI. Remove obsolete billing/license resources, unused jars/fonts and agent-dashboard churn.
 
-Simultaneous dual-source synchronization and multi-quality ageing remain source experiments with concrete gaps recorded in the integration ledger. This entry is not a published release announcement.
+Simultaneous dual-source synchronization and multi-quality ageing remain source experiments with concrete gaps recorded in the integration ledger. Physical Pixel testing remains outstanding; emulator coverage and measured limits are documented in `docs/testing.md`.

@@ -1,3 +1,13 @@
+import java.util.Properties
+
+// Credentials and keystore remain outside source control.
+def signingFile = System.getenv('ECHO_SIGNING_PROPERTIES') ? new File(System.getenv('ECHO_SIGNING_PROPERTIES')) : rootProject.file('keystore.properties')
+def releaseSigning = null
+if (signingFile.isFile()) {
+    releaseSigning = new Properties()
+    signingFile.withInputStream { releaseSigning.load(it) }
+}
+
 buildscript {
     repositories {
         google()
@@ -24,8 +34,19 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         minSdk 30
         targetSdk 37
-        versionCode 16
-        versionName "2.1.0-dev"
+        versionCode 17
+        versionName "2.1.0"
+    }
+
+    signingConfigs {
+        if (releaseSigning != null) {
+            release {
+                storeFile new File(signingFile.parentFile, releaseSigning.getProperty('storeFile'))
+                storePassword releaseSigning.getProperty('storePassword')
+                keyAlias releaseSigning.getProperty('keyAlias')
+                keyPassword releaseSigning.getProperty('keyPassword')
+            }
+        }
     }
 
     buildTypes {
@@ -33,12 +54,9 @@ android {
             minifyEnabled true
             proguardFile file('proguard.cfg')
             proguardFile getDefaultProguardFile('proguard-android-optimize.txt')
-            // Release signing is configured outside source control.
+            if (releaseSigning != null) signingConfig signingConfigs.release
         }
 
-        debug {
-            //signingConfig signingConfigs.release
-        }
     }
     lint {
         abortOnError true
