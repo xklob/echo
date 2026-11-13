@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
+    <application
+        android:name=".EchoApplication"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.Echo" >
+        <activity
+            android:name=".ui.MainActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <service
+            android:name=".recording.RecordingService"
+            android:foregroundServiceType="microphone|camera|location|mediaProjection"
+            android:enabled="true"
+            android:exported="false">
+        </service>
+
+        <service android:name=".ListeningTileService" android:exported="true" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE" android:label="Echo" android:icon="@drawable/ic_stat_notify_recording">
+            <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
+        </service>
+        <receiver android:name=".AutomationReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="com.klob.echo.automation.v1.START" />
+                <action android:name="com.klob.echo.automation.v1.STOP" />
+                <action android:name="com.klob.echo.automation.v1.SAVE" />
+                <action android:name="com.klob.echo.automation.v1.CONTINUOUS_START" />
+                <action android:name="com.klob.echo.automation.v1.CONTINUOUS_STOP" />
+                <action android:name="com.klob.echo.automation.v1.SET_LIMITS" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name=".StartupReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+
+        <activity android:name=".ui.DetailActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity-alias android:name=".SaidItActivity" android:targetActivity=".ui.MainActivity" android:exported="true" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/path_provider">
+
+            </meta-data>
+        </provider>
+    </application>
+
+</manifest>

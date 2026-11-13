@@ -1,0 +1,19 @@
+<resources>
+    <item name="record_start_stop" type="id" />
+    <item name="record_save" type="id" />
+    <item name="record_duration" type="id" />
+    <item name="record_state" type="id" />
+    <item name="record_available" type="id" />
+    <item name="history_pending" type="id" />
+    <item name="setting_disk" type="id" />
+    <item name="keyword_enabled" type="id" />
+    <item name="location_enabled" type="id" />
+    <item name="camera_enabled" type="id" />
+    <item name="input_value" type="id" />
+    <item name="input_container" type="id" />
+    <item name="library_list" type="id" />
+    <item name="theme_choice" type="id" />
+    <item name="note_text" type="id" />
+    <item name="clip_progress" type="id" />
+    <item name="playback_seek" type="id" />
+</resources>

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.2.0 // 2026-11-12
+
+- Rebuild the interface around Record, Library, Tools and Settings, with adaptive bottom navigation / side rail, focused detail screens and native back navigation.
+- Replace the global Apply form with persistent switches and validated Material dialogs; use native time selection for recording schedules.
+- Add System, Light and Dark appearance choices. System is the default; dark mode uses black surfaces and paradigm green.
+- Rewrite labels, instructions and status messages. Distinguish saved tool choices, active collection, missing permission and missing speech model.
+- Add a filtered library with readable titles, clip durations, overflow actions and a playback sheet with pause/seeking. Preserve note, survey and dialog drafts across screen recreation.
+- Rename the Android module to app, organize feature packages, adopt the standard Gradle plugins layout, replace legacy icons with vectors/adaptive icons and remove obsolete IDE metadata. Preserve application identity, recordings, preferences, release signing and external controls.
+- Guard rapid recording restarts against stale stop callbacks and reset displayed history counters when a new capture opens.
+- Refresh the README with one gallery of actual app screenshots and mark the UI overhaul complete in the roadmap.
+
 ## 2.1.1 // 2026-11-12
 
 - Save valid settings while recording and preserve them when leaving and reopening Settings. History/quality changes apply at the next recording start without discarding current history.

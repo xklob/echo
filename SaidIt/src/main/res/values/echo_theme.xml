@@ -1,7 +1,0 @@
-<resources>
-    <style name="EchoTheme" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">#246B38</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="android:windowLightStatusBar">?attr/isLightTheme</item>
-    </style>
-</resources>

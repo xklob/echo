@@ -1,0 +1,14 @@
+<resources>
+    <color name="echo_primary">#007500</color>
+    <color name="echo_on_primary">#FFFFFF</color>
+    <color name="echo_primary_container">#D4F6CD</color>
+    <color name="echo_on_primary_container">#002200</color>
+    <color name="echo_background">#FAFAF8</color>
+    <color name="echo_surface">#FFFFFF</color>
+    <color name="echo_surface_variant">#F0F0EB</color>
+    <color name="echo_on_surface">#202020</color>
+    <color name="echo_on_surface_variant">#62625E</color>
+    <color name="echo_outline">#74746E</color>
+    <color name="echo_outline_variant">#DEDED7</color>
+    <color name="echo_error">#BA1A1A</color>
+</resources>

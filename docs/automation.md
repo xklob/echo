@@ -1,6 +1,6 @@
 # Automation v1
 
-Enable **Allow external automation** in Settings. It defaults off. Broadcast to component `com.klob.echo/.AutomationReceiver`; actions use the `com.klob.echo.automation.v1.` prefix.
+Enable **Allow external controls** in Settings → External controls. It defaults off. Broadcast to component `com.klob.echo/.AutomationReceiver`; actions use the `com.klob.echo.automation.v1.` prefix.
 
 | Action suffix | Extras | Behavior |
 | --- | --- | --- |

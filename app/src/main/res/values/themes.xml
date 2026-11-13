@@ -1,0 +1,35 @@
+<resources>
+    <style name="Theme.Echo" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/echo_primary</item>
+        <item name="colorOnPrimary">@color/echo_on_primary</item>
+        <item name="colorPrimaryContainer">@color/echo_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/echo_on_primary_container</item>
+        <item name="colorSecondary">@color/echo_primary</item>
+        <item name="colorOnSecondary">@color/echo_on_primary</item>
+        <item name="colorSecondaryContainer">@color/echo_primary_container</item>
+        <item name="colorOnSecondaryContainer">@color/echo_on_primary_container</item>
+        <item name="colorTertiary">@color/echo_primary</item>
+        <item name="android:colorBackground">@color/echo_background</item>
+        <item name="colorSurface">@color/echo_surface</item>
+        <item name="colorSurfaceDim">@color/echo_background</item>
+        <item name="colorSurfaceBright">@color/echo_surface_variant</item>
+        <item name="colorSurfaceContainerLowest">@color/echo_background</item>
+        <item name="colorSurfaceContainerLow">@color/echo_surface</item>
+        <item name="colorSurfaceContainer">@color/echo_surface</item>
+        <item name="colorSurfaceContainerHigh">@color/echo_surface_variant</item>
+        <item name="colorSurfaceContainerHighest">@color/echo_surface_variant</item>
+        <item name="colorSurfaceVariant">@color/echo_surface_variant</item>
+        <item name="colorSurfaceInverse">@color/echo_surface_variant</item>
+        <item name="colorOnSurfaceInverse">@color/echo_on_surface</item>
+        <item name="colorPrimaryInverse">@color/echo_primary</item>
+        <item name="colorOnSurface">@color/echo_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/echo_on_surface_variant</item>
+        <item name="colorOutline">@color/echo_outline</item>
+        <item name="colorOutlineVariant">@color/echo_outline_variant</item>
+        <item name="colorError">@color/echo_error</item>
+        <item name="android:windowLightStatusBar">?attr/isLightTheme</item>
+        <item name="android:windowLightNavigationBar">?attr/isLightTheme</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

@@ -39,3 +39,7 @@ __pycache__/
 *.keystore
 keystore.properties
 /server/server
+
+# IDE module metadata and private signing containers
+*.iml
+*.p12
