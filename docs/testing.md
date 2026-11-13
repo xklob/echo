@@ -121,3 +121,9 @@ APK SHA-256: `fa430c96542216a065151dbe5a190f28727cd5679ca0666120df887cc16dba9e`.
 A disposable Android 17 emulator runs a lower-version verification fixture signed with this same production key. It uses the minified release implementation with test-only version metadata; it is not a historical public release. Native LISTEN/SAVE/STOP recorded a completed 53,968-byte Opus clip, independently decoded by ffmpeg (48 kHz mono, approximately 9.92 s). This generated recording is retained for the real Klobstore update-to-code-17 preservation check. No user's existing app or recordings are removed.
 
 The production certificate differs from the earlier debug review APK. Android correctly disallows replacing that debug installation in place; users must export wanted data before switching certificates. Future production releases preserve the production key. Physical Pixel validation remains outstanding.
+
+## 2.1.1 persistence regression release
+
+JVM tests, debug/release lint and both APK builds pass. Android 17 instrumentation reports `OK (20 tests)`: 19 functional tests, with the opt-in resource soak skipped. Three new regressions cover saving history settings during recording and reopening them, visible invalid-memory errors without overwriting preferences, and persistent optional-tool choices across stop/service recreation. Activity settings are snapshotted at recording start along with history configuration.
+
+The signed minified APK upgraded the existing production 2.1.0 installation in place. The first-install timestamp and SHA-256 hashes of the existing generated clip and its metadata were unchanged. Release signature verification and 16 KiB alignment pass with the same production certificate. APK SHA-256: `4466abc905e88670b667bcd9f5bf19c0fa642329b91edc9ae5b3e548abe809df`.

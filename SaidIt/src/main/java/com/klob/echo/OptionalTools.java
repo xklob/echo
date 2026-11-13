@@ -132,7 +132,52 @@ final class OptionalTools {
         + (keywords.isRunning() ? " keywords" : "");
   }
 
+  boolean wanted(String tool) {
+    return service
+        .getSharedPreferences(SaidItService.PREFS, 0)
+        .getBoolean(tool + "_enabled", false);
+  }
+
+  void setEnabled(String tool, boolean enabled, String words) {
+    if (!java.util.Arrays.asList("gps", "camera", "keywords").contains(tool))
+      throw new IllegalArgumentException("Unknown tool");
+    if (tool.equals("keywords") && enabled && !validKeywords(words))
+      throw new IllegalArgumentException("Enter keywords using letters, spaces or commas.");
+    android.content.SharedPreferences.Editor edit =
+        service
+            .getSharedPreferences(SaidItService.PREFS, 0)
+            .edit()
+            .putBoolean(tool + "_enabled", enabled);
+    if (tool.equals("keywords")) edit.putString("keywords", words.trim());
+    edit.apply();
+    if (!enabled) {
+      if (tool.equals("gps")) gps(false);
+      if (tool.equals("camera")) camera(false);
+      if (tool.equals("keywords")) keywords(false, words);
+    } else if (service.isCapturing()) restoreConfigured();
+    else service.message = "Preference saved. This tool will start when recording starts.";
+  }
+
+  static boolean validKeywords(String words) {
+    return words != null
+        && !words.trim().isEmpty()
+        && words.length() <= 200
+        && words.matches("[\\p{L} ,;'-]+");
+  }
+
+  void restoreConfigured() {
+    if (!service.isCapturing()) return;
+    if (wanted("gps") && !gps) gps(true);
+    if (wanted("camera") && !camera.isRunning()) camera(true);
+    if (wanted("keywords") && !keywords.isRunning()) {
+      String words = service.getSharedPreferences(SaidItService.PREFS, 0).getString("keywords", "");
+      if (validKeywords(words)) keywords(true, words);
+      else service.message = "Keyword alerts are enabled. Add a keyword in settings.";
+    }
+  }
+
   void camera(boolean enable) {
+    if (enable && camera.isRunning()) return;
     if (!enable) {
       camera.stop();
       service.refreshOptionalTypes();
@@ -185,7 +230,7 @@ final class OptionalTools {
       service.message = "Start listening before enabling keyword alerts.";
       return;
     }
-    if (words.length() > 200 || !words.matches("[\\p{L} ,;'-]+")) {
+    if (!validKeywords(words)) {
       service.message = "Enter keywords using letters, spaces or commas.";
       return;
     }
@@ -230,6 +275,7 @@ final class OptionalTools {
 
   @SuppressLint("MissingPermission")
   void gps(boolean enabled) {
+    if (enabled && gps) return;
     if (!enabled) {
       gps = false;
       if (locations != null) locations.removeUpdates(locationListener);

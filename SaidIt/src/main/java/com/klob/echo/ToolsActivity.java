@@ -16,6 +16,7 @@ public final class ToolsActivity extends AppCompatActivity {
   private TextView status, live;
   private String lastMessage = "";
   private EditText words, note;
+  private android.widget.Button gpsButton, cameraButton, keywordButton;
   private final Handler main = new Handler(Looper.getMainLooper());
   private final ExecutorService io = Executors.newSingleThreadExecutor();
   private boolean bound;
@@ -40,40 +41,29 @@ public final class ToolsActivity extends AppCompatActivity {
     Ui.text(
         this,
         body,
-        "Capture tools run only after you enable them for this listening session. STOP turns them"
-            + " off. Traces stay in private app storage until shared or deleted.",
+        "GPS, camera and keyword-alert preferences are saved for future recording sessions. STOP"
+            + " pauses the tools without changing your choices. Screen sharing still needs Android"
+            + " consent for each session.",
         14);
-    Ui.button(
-        this,
-        body,
-        "TOGGLE GPS TRACE",
-        () -> {
-          if (ready()) {
-            if (service.tools.gps) service.tools.gps(false);
-            else if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED)
-              requestPermissions(
-                  new String[] {
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                  },
-                  31);
-            else service.tools.gps(true);
-          }
-        });
-    Ui.button(
-        this,
-        body,
-        "TOGGLE SHAKE CAMERA",
-        () -> {
-          if (ready()) {
-            if (service.tools.camera.isRunning()) service.tools.camera(false);
-            else if (checkSelfPermission(Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED)
-              requestPermissions(new String[] {Manifest.permission.CAMERA}, 32);
-            else service.tools.camera(true);
-          }
-        });
+    gpsButton =
+        Ui.button(
+            this,
+            body,
+            "GPS TRACE",
+            () ->
+                toggleCaptureTool(
+                    "gps",
+                    31,
+                    new String[] {
+                      Manifest.permission.ACCESS_FINE_LOCATION,
+                      Manifest.permission.ACCESS_COARSE_LOCATION
+                    }));
+    cameraButton =
+        Ui.button(
+            this,
+            body,
+            "SHAKE CAMERA",
+            () -> toggleCaptureTool("camera", 32, new String[] {Manifest.permission.CAMERA}));
     Ui.button(
         this,
         body,
@@ -149,7 +139,11 @@ public final class ToolsActivity extends AppCompatActivity {
               () -> {
                 try {
                   ModelInstaller.install(app);
-                  runOnUiThread(() -> status.setText("Speech model installed."));
+                  runOnUiThread(
+                      () -> {
+                        status.setText("Speech model installed.");
+                        if (service != null) service.tools.restoreConfigured();
+                      });
                 } catch (IOException e) {
                   runOnUiThread(
                       () ->
@@ -158,20 +152,23 @@ public final class ToolsActivity extends AppCompatActivity {
                 }
               });
         });
-    Ui.button(
-        this,
-        body,
-        "TOGGLE KEYWORD ALERTS",
-        () -> {
-          if (ready()) {
-            String value = words.getText().toString().trim();
-            getSharedPreferences(SaidItService.PREFS, 0)
-                .edit()
-                .putString("keywords", value)
-                .apply();
-            service.tools.keywords(!service.tools.keywords.isRunning(), value);
-          }
-        });
+    keywordButton =
+        Ui.button(
+            this,
+            body,
+            "KEYWORD ALERTS",
+            () -> {
+              if (service == null) return;
+              try {
+                service.tools.setEnabled(
+                    "keywords",
+                    !service.tools.wanted("keywords"),
+                    words.getText().toString().trim());
+              } catch (IllegalArgumentException e) {
+                words.setError(e.getMessage());
+                words.requestFocus();
+              }
+            });
     Ui.text(this, body, "Notes and surveys", 22);
     note = new EditText(this);
     note.setHint("Write a note");
@@ -312,6 +309,14 @@ public final class ToolsActivity extends AppCompatActivity {
           .show();
   }
 
+  private void toggleCaptureTool(String tool, int request, String[] permissions) {
+    if (service == null) return;
+    boolean enabled = !service.tools.wanted(tool);
+    service.tools.setEnabled(tool, enabled, "");
+    if (enabled && checkSelfPermission(permissions[0]) != PackageManager.PERMISSION_GRANTED)
+      requestPermissions(permissions, request);
+  }
+
   private boolean ready() {
     if (service == null || !service.isSessionActive()) {
       status.setText("Start listening on the main screen first.");
@@ -325,8 +330,7 @@ public final class ToolsActivity extends AppCompatActivity {
     super.onRequestPermissionsResult(code, permissions, grants);
     if (service == null || grants.length == 0 || grants[0] != PackageManager.PERMISSION_GRANTED)
       return;
-    if (code == 31) service.tools.gps(true);
-    if (code == 32) service.tools.camera(true);
+    if (code == 31 || code == 32) service.tools.restoreConfigured();
   }
 
   @Override
@@ -367,6 +371,12 @@ public final class ToolsActivity extends AppCompatActivity {
       new Runnable() {
         public void run() {
           if (service != null) {
+            Ui.setText(gpsButton, "GPS TRACE // " + (service.tools.wanted("gps") ? "ON" : "OFF"));
+            Ui.setText(
+                cameraButton, "SHAKE CAMERA // " + (service.tools.wanted("camera") ? "ON" : "OFF"));
+            Ui.setText(
+                keywordButton,
+                "KEYWORD ALERTS // " + (service.tools.wanted("keywords") ? "ON" : "OFF"));
             Ui.setText(
                 live,
                 service.captureState

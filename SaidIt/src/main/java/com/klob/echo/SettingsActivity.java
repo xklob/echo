@@ -38,8 +38,8 @@ public final class SettingsActivity extends AppCompatActivity {
         Ui.text(
             this,
             body,
-            "Stop listening before changing history or quality. Changing these starts a new"
-                + " history.",
+            "Changes are saved now. History, quality and activity changes apply the next time"
+                + " recording starts.",
             14);
     Ui.text(this, body, "History", 22);
     ram =
@@ -171,10 +171,6 @@ public final class SettingsActivity extends AppCompatActivity {
               || diskOn.isChecked() != prefs.getBoolean("disk", false)
               || diskMb != prefs.getInt("disk_mb", 128)
               || bitrate != prefs.getInt("bitrate", 32000);
-      if (historyChanged && prefs.getBoolean("enabled", false)) {
-        status.setText("Tap STOP on the main screen before changing history or quality.");
-        return;
-      }
       prefs
           .edit()
           .putInt("ram_mb", memory)
@@ -198,16 +194,36 @@ public final class SettingsActivity extends AppCompatActivity {
           .apply();
       if (prefs.getBoolean("enabled", false))
         startService(new Intent(this, SaidItService.class).setAction(SaidItService.ACTION_RULES));
-      status.setText("Settings saved.");
+      boolean pending =
+          SaidItService.sessionActive
+              && (historyChanged || prefs.getBoolean("history_settings_pending", false));
+      String saved =
+          pending
+              ? "Settings saved. History and quality changes apply the next time recording starts."
+              : "Settings saved.";
+      prefs.edit().putBoolean("history_settings_pending", pending).apply();
+      status.setText(saved);
+      Toast.makeText(this, saved, Toast.LENGTH_LONG).show();
     } catch (RuntimeException e) {
-      status.setText("Check the number ranges and use HH:mm for times.");
+      status.setText(e.getMessage() == null ? "Check the highlighted field." : e.getMessage());
+      Toast.makeText(this, status.getText(), Toast.LENGTH_LONG).show();
     }
   }
 
   private static int range(EditText view, int minimum, int maximum) {
-    int v = Integer.parseInt(view.getText().toString());
-    if (v < minimum || v > maximum) throw new IllegalArgumentException();
-    return v;
+    try {
+      int v = Integer.parseInt(view.getText().toString());
+      if (v < minimum || v > maximum) throw new NumberFormatException();
+      view.setError(null);
+      return v;
+    } catch (NumberFormatException invalid) {
+      String error = "Enter a number from " + minimum + " to " + maximum + ".";
+      view.setError(error);
+      view.requestFocus();
+      view.requestRectangleOnScreen(
+          new android.graphics.Rect(0, 0, view.getWidth(), view.getHeight()));
+      throw new IllegalArgumentException(error);
+    }
   }
 
   private EditText number(LinearLayout body, String label, int value) {

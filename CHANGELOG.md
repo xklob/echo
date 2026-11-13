@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.1 // 2026-11-12
+
+- Save valid settings while recording and preserve them when leaving and reopening Settings. History/quality changes apply at the next recording start without discarding current history.
+- Highlight invalid values beside their fields and show visible save feedback.
+- Persist GPS, shake-camera and offline keyword-alert preferences across stops and service restarts. Stopping recording pauses tools without clearing their saved choices.
+- Resume saved keyword alerts after model installation. Screen-sharing consent remains session-specific, as Android requires.
+- Consolidate README screenshots into one gallery and add the requested future-feature roadmap.
+
 ## 2.1.0 // 2026-11-12
 
 - Separate `com.klob.echo` identity with original upstream history/GPL retained.

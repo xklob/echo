@@ -2,51 +2,37 @@
 
 Save audio from the past. This fork consolidates the recorder and useful additions from the Echo fork network into one Android app.
 
-Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original Echo. Current release: [2.1.0](https://github.com/xklob/echo/releases/tag/v2.1.0), versionCode `17`.
+Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original Echo. Current release: [2.1.1](https://github.com/xklob/echo/releases/tag/v2.1.1), versionCode `18`.
 
-## Base features
+## Screenshots
 
-The original Echo workflow: keep rolling microphone history and save audio from the past. Listening continues in the background until you stop it.
-
-<img src="docs/screenshots/base-recorder.png" width="300" alt="Echo listening with 90 seconds of available history and a one-minute lookback selected" />
-
-The screenshots show the current 2.1.0 interface on an Android 17 emulator, using generated test recordings.
-
-## Features integrated from other forks
-
-- Compressed Opus RAM history, bounded disk storage, memory budgets and direct packet exports.
-- Material 3 controls, waveform, custom lookback, timestamp filenames, save progress and cancellation.
-- Opus/Ogg, WAV, FLAC and AAC/M4A exports, scoped folder copies, and a recordings/trace library with playback, sharing, rename and delete.
-- Autosave, rotating continuous clips, activity saves, active hours, battery threshold, notification actions, Quick Settings and opt-in automation.
-- Optional offline keyword alerts, GPS/GPX, notes, surveys, shake camera clips, consented screenshots and permitted device-audio capture.
-- Optional authenticated HTTPS sync with verified acknowledgements and retained local originals.
-
-Integrated from Toldya, good-echo, saidIT, mikenrafter, ElliotBadinger and copa-sh. Exact source revisions, replacements and remaining blockers are in the [integration ledger](docs/integration-ledger.md).
-
-**History, exports, activity and listening rules**
+Echo 2.1.0 on an Android 17 emulator, using generated test recordings.
 
 <p>
-  <img src="docs/screenshots/integrated-history-export.png" width="300" alt="RAM and disk history budgets, Opus bitrate, export format and automatic-save settings" />
-  <img src="docs/screenshots/integrated-rules-activity.png" width="300" alt="Amplitude activity settings, active hours, minimum battery, folder copies and external automation" />
+  <img src="docs/screenshots/base-recorder.png" width="280" alt="Recording and saving audio from the past" />
+  <img src="docs/screenshots/integrated-library.png" width="280" alt="Saved recordings and notes" />
+  <img src="docs/screenshots/integrated-history-export.png" width="280" alt="History, quality and automatic-save settings" />
+  <img src="docs/screenshots/integrated-rules-activity.png" width="280" alt="Activity detection and listening rules" />
+  <img src="docs/screenshots/integrated-capture-tools.png" width="280" alt="Optional location, camera and keyword tools" />
+  <img src="docs/screenshots/integrated-notes-sync.png" width="280" alt="Notes, surveys and optional sync" />
 </p>
 
-**Recordings and optional tools**
+## Roadmap
 
-<p>
-  <img src="docs/screenshots/integrated-library.png" width="300" alt="Shared library containing a saved recording and timestamped note" />
-  <img src="docs/screenshots/integrated-capture-tools.png" width="300" alt="Optional GPS, shake camera, screenshots, device-audio capture and offline keyword controls" />
-  <img src="docs/screenshots/integrated-notes-sync.png" width="300" alt="Notes, survey import and optional HTTPS server-sync settings with no credentials entered" />
-</p>
+Potential features for this fork:
 
-## Our features
+- Wearable integration, such as recording from a watch.
+- A comprehensive UI/UX overhaul.
+- A web dashboard and control panel.
+- Semantic search through recordings.
 
-Reserved for future features developed specifically for this fork. No custom features have been added yet; the [custom-feature backlog](docs/custom-feature-backlog.md) is separate from consolidation work.
+These are separate from unfinished source integration. See the [custom-feature backlog](docs/custom-feature-backlog.md).
 
 ## Use
 
 Tap **LISTEN**, allow microphone access, then choose how far back to save. **STOP** stays stopped. After a reboot or process recreation, open Echo and tap **RESUME**; Android does not permit unrestricted microphone startup from a boot receiver.
 
-Settings control history budgets, quality, format, automatic saves and listening rules. Equal start/end hours mean all day; overnight windows are supported. Android can delay schedule transitions when exact-alarm access is unavailable.
+Settings control history budgets, quality, format, automatic saves and listening rules. Changes are saved while recording; history, quality and activity changes take effect when recording next starts. Invalid values are highlighted instead of silently ignored. Equal start/end hours mean all day; overnight windows are supported. Android can delay schedule transitions when exact-alarm access is unavailable.
 
 Saved files stay in private app storage. Share recordings before uninstalling. An optional folder picker creates verified additional copies; library rename/delete affects local files. Folder copies remain independent and do not follow automatic local retention. Revoked grants and provider errors are reported while the local recording is kept. No all-files permission is requested.
 
@@ -58,7 +44,7 @@ Microphone interruptions freeze usable history. Recovery starts a new history an
 
 ## Optional tools
 
-Tools are off until explicitly enabled. STOP turns capture tools off. Camera, location and screen capture request their permissions or native Android consent separately. Capture state remains visible in the foreground notification.
+Tools are off until explicitly enabled. GPS, camera and keyword-alert choices persist across recording sessions. STOP pauses their operation without clearing those choices. Camera, location and screen capture request their permissions or native Android consent separately. Capture state remains visible in the foreground notification.
 
 - Activity saves detect loudness, including non-speech. Threshold and pre/post-roll are configurable. Ordinary quiet audio remains saveable.
 - Keyword recognition uses the same captured samples. Install the optional US-English Vosk model from **Optional tools**; recognition stays offline after installation. The approximately 40 MB download and substantial native model RAM are additional to the history budget. Both library and supplied model use Apache-2.0.

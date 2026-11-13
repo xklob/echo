@@ -37,6 +37,7 @@ public final class SaidItService extends Service {
   private ClipStore clips;
   OptionalTools tools;
   private ActivityDetector activityDetector;
+  private boolean activityEnabled;
   private volatile int optionalTypes;
   private volatile android.media.projection.MediaProjection playbackProjection;
   private String historySource = "microphone";
@@ -227,6 +228,7 @@ public final class SaidItService extends Service {
     if (!ListeningRules.allowed(
         desired, schedule, from, to, ZonedDateTime.now(), battery, minimum)) {
       closeCapture(true);
+      main.post(tools::stop);
       captureState =
           battery >= 0 && battery < minimum ? "Paused by battery rule" : "Paused by schedule";
       notifyState();
@@ -290,6 +292,7 @@ public final class SaidItService extends Service {
               prefs.getInt("bitrate", 32000),
               new StatFs(getFilesDir().getPath()).getBlockSizeLong());
       epoch++;
+      activityEnabled = prefs.getBoolean("activity", false);
       activityDetector =
           new ActivityDetector(
               prefs.getInt("activity_db", -40),
@@ -308,6 +311,8 @@ public final class SaidItService extends Service {
       wakeLock.acquire(10 * 60 * 1000L);
       captureHandler.removeCallbacks(readAudio);
       captureHandler.post(readAudio);
+      prefs.edit().putBoolean("history_settings_pending", false).apply();
+      main.post(tools::restoreConfigured);
       notifyState();
     } catch (IOException | RuntimeException | OutOfMemoryError e) {
       closeCapture(false);
@@ -371,7 +376,7 @@ public final class SaidItService extends Service {
                     playbackProjection == null ? "Listening" : "Listening // device audio";
                 publish();
                 tools.pcm(pcm, count);
-                if (prefs.getBoolean("activity", false)) {
+                if (activityEnabled) {
                   ActivityDetector.Event event =
                       activityDetector.process(Math.sqrt(square / (double) count), count);
                   if (event != null) beginSaveRange(event.start, event.end, "activity", false);
@@ -432,6 +437,10 @@ public final class SaidItService extends Service {
       } catch (IOException | RuntimeException | OutOfMemoryError e) {
         message = "Could not flush the final audio frame.";
       }
+  }
+
+  boolean isCapturing() {
+    return foreground && desired && captureState.startsWith("Listening");
   }
 
   public boolean isSaving() {
