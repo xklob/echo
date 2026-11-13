@@ -1,33 +1,29 @@
 package com.klob.echo.ui;
 
-import android.content.*;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.*;
 import android.widget.*;
-import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.*;
-import com.google.android.material.chip.*;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.snackbar.Snackbar;
-import com.klob.echo.*;
-import com.klob.echo.storage.ClipStore;
+import com.klob.echo.R;
 import java.io.File;
 import java.util.*;
 
+/** Audio clips are the primary library. Raw captures have a separate secondary destination. */
 public final class LibraryFragment extends Fragment {
   private LibraryModel model;
   private Adapter adapter;
-  private TextView empty;
-  private int filter;
+  private TextView empty, count;
+  private boolean extras;
 
   @Override
   public void onCreate(Bundle state) {
     super.onCreate(state);
+    extras = getArguments() != null && getArguments().getBoolean("extras", false);
     model = new ViewModelProvider(requireActivity()).get(LibraryModel.class);
-    Integer stored = model.state.get("filter");
-    filter = stored == null ? 0 : stored;
     getParentFragmentManager()
         .setFragmentResultListener(
             "confirmed",
@@ -41,44 +37,42 @@ public final class LibraryFragment extends Fragment {
   @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle state) {
     LinearLayout body = Ui.column(requireContext());
-    body.setPadding(Ui.dp(requireContext(), 20), 0, Ui.dp(requireContext(), 20), 0);
+    body.setPadding(
+        Ui.dp(requireContext(), 20), Ui.dp(requireContext(), 8), Ui.dp(requireContext(), 20), 0);
+    Ui.text(body, extras ? R.string.extras_intro : R.string.library_intro, 14, true);
     LinearLayout controls = new LinearLayout(requireContext());
     controls.setGravity(Gravity.CENTER_VERTICAL);
     body.addView(controls);
-    HorizontalScrollView scroller = new HorizontalScrollView(requireContext());
-    scroller.setHorizontalScrollBarEnabled(false);
-    controls.addView(scroller, new LinearLayout.LayoutParams(0, -2, 1));
-    ChipGroup chips = new ChipGroup(requireContext());
-    chips.setSingleLine(true);
-    chips.setSingleSelection(true);
-    chips.setSelectionRequired(true);
-    scroller.addView(chips);
-    int[] titles = {
-      R.string.filter_all, R.string.filter_audio, R.string.filter_notes, R.string.filter_captures
-    };
-    for (int j = 0; j < titles.length; j++) {
-      int index = j;
-      Chip chip = new Chip(requireContext());
-      chip.setText(titles[j]);
-      chip.setCheckable(true);
-      chip.setChecked(filter == j);
-      chip.setEnsureMinTouchTargetSize(true);
-      chips.addView(chip);
-      chip.setOnClickListener(
-          v -> {
-            filter = index;
-            model.state.set("filter", filter);
-            show(model.items.getValue());
-          });
-    }
-    ImageButton refresh = icon(R.drawable.ic_refresh, getString(R.string.refresh));
+    count = new TextView(requireContext());
+    count.setTextSize(14);
+    controls.addView(count, new LinearLayout.LayoutParams(0, -2, 1));
+    ImageButton refresh =
+        FileActions.icon(requireContext(), R.drawable.ic_refresh, getString(R.string.refresh));
     controls.addView(
         refresh,
         new LinearLayout.LayoutParams(Ui.dp(requireContext(), 48), Ui.dp(requireContext(), 48)));
     refresh.setOnClickListener(v -> model.refresh());
+    if (!extras) {
+      ImageButton more =
+          FileActions.icon(requireContext(), R.drawable.ic_more, getString(R.string.more_options));
+      controls.addView(
+          more,
+          new LinearLayout.LayoutParams(Ui.dp(requireContext(), 48), Ui.dp(requireContext(), 48)));
+      more.setOnClickListener(
+          v -> {
+            PopupMenu menu = new PopupMenu(requireContext(), more);
+            menu.getMenu().add(R.string.saved_extras);
+            menu.setOnMenuItemClickListener(
+                a -> {
+                  DetailActivity.open(requireContext(), "extras", R.string.saved_extras);
+                  return true;
+                });
+            menu.show();
+          });
+    }
     empty = Ui.text(body, R.string.loading, 18, true);
     empty.setGravity(Gravity.CENTER);
-    empty.setPadding(0, Ui.dp(requireContext(), 64), 0, Ui.dp(requireContext(), 32));
+    empty.setPadding(0, Ui.dp(requireContext(), 48), 0, Ui.dp(requireContext(), 24));
     RecyclerView list = new RecyclerView(requireContext());
     list.setId(R.id.library_list);
     list.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -90,7 +84,9 @@ public final class LibraryFragment extends Fragment {
 
   @Override
   public void onViewCreated(View view, Bundle state) {
-    model.items.observe(getViewLifecycleOwner(), this::show);
+    (extras ? model.extras : model.items).observe(getViewLifecycleOwner(), this::show);
+    model.loaded.observe(
+        getViewLifecycleOwner(), loaded -> show((extras ? model.extras : model.items).getValue()));
     model.feedback.observe(
         getViewLifecycleOwner(),
         res -> {
@@ -107,93 +103,28 @@ public final class LibraryFragment extends Fragment {
     model.refresh();
   }
 
-  private void show(List<LibraryModel.Item> all) {
-    if (adapter == null || all == null) return;
-    List<LibraryModel.Item> rows = new ArrayList<>();
-    for (LibraryModel.Item item : all) if (filter == 0 || filter == item.kind) rows.add(item);
+  private void show(List<LibraryModel.Item> rows) {
+    if (adapter == null || rows == null) return;
     adapter.submitList(rows);
+    count.setText(
+        extras
+            ? getResources().getQuantityString(R.plurals.related_items, rows.size(), rows.size())
+            : getResources()
+                .getQuantityString(R.plurals.recording_count, rows.size(), rows.size()));
     empty.setVisibility(rows.isEmpty() ? View.VISIBLE : View.GONE);
     empty.setText(
-        all.isEmpty()
-            ? getString(R.string.library_empty) + "\n\n" + getString(R.string.library_empty_help)
-            : getString(R.string.library_no_matches));
+        !Boolean.TRUE.equals(model.loaded.getValue())
+            ? getString(R.string.loading)
+            : extras
+                ? getString(R.string.extras_empty)
+                : getString(R.string.library_empty)
+                    + "\n\n"
+                    + getString(R.string.library_empty_help));
   }
 
-  private ImageButton icon(int drawable, String label) {
-    ImageButton b = new ImageButton(requireContext());
-    b.setImageResource(drawable);
-    b.setImageTintList(
-        android.content.res.ColorStateList.valueOf(
-            Ui.color(requireContext(), com.google.android.material.R.attr.colorOnSurfaceVariant)));
-    b.setContentDescription(label);
-    android.util.TypedValue value = new android.util.TypedValue();
-    requireContext()
-        .getTheme()
-        .resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, value, true);
-    b.setBackgroundResource(value.resourceId);
-    return b;
-  }
-
-  private void open(LibraryModel.Item item) {
-    if (item.audio) {
-      PlaybackSheet.forFile(item.file, item.title).show(getParentFragmentManager(), "playback");
-      return;
-    }
-    String name = item.file.getName();
-    if (name.endsWith(".txt") || name.endsWith(".json")) {
-      TextSheet.show(getParentFragmentManager(), item.title, item.file.getPath(), false);
-      return;
-    }
-    try {
-      startActivity(
-          new Intent(Intent.ACTION_VIEW)
-              .setDataAndType(uri(item.file), ClipStore.mime(item.file))
-              .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));
-    } catch (RuntimeException e) {
-      Snackbar.make(requireView(), R.string.open_failed, Snackbar.LENGTH_LONG).show();
-    }
-  }
-
-  private Uri uri(File file) {
-    return FileProvider.getUriForFile(
-        requireContext(), BuildConfig.APPLICATION_ID + ".provider", file);
-  }
-
-  private void share(File file) {
-    try {
-      Uri uri = uri(file);
-      Intent intent =
-          new Intent(Intent.ACTION_SEND)
-              .setType(ClipStore.mime(file))
-              .putExtra(Intent.EXTRA_STREAM, uri)
-              .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-      intent.setClipData(ClipData.newRawUri(getString(R.string.recording_name), uri));
-      startActivity(Intent.createChooser(intent, getString(R.string.share)));
-    } catch (RuntimeException e) {
-      Snackbar.make(requireView(), R.string.share_failed, Snackbar.LENGTH_LONG).show();
-    }
-  }
-
-  private void options(View anchor, LibraryModel.Item item) {
-    PopupMenu menu = new PopupMenu(requireContext(), anchor);
-    menu.getMenu().add(0, 1, 0, R.string.share);
-    menu.getMenu().add(0, 2, 1, R.string.rename);
-    menu.getMenu().add(0, 3, 2, R.string.delete);
-    menu.setOnMenuItemClickListener(
-        action -> {
-          if (action.getItemId() == 1) share(item.file);
-          if (action.getItemId() == 2)
-            RenameDialog.forFile(item.file).show(getParentFragmentManager(), "rename");
-          if (action.getItemId() == 3)
-            ConfirmDialog.show(
-                getParentFragmentManager(),
-                R.string.delete_title,
-                R.string.delete_help,
-                R.string.delete,
-                "delete:" + item.file.getPath());
-          return true;
-        });
-    menu.show();
+  private void open(LibraryModel.Item item, boolean play) {
+    if (item.audio) DetailActivity.openClip(requireContext(), item.file.getPath(), play);
+    else FileActions.open(this, item.file, item.title);
   }
 
   private final class Adapter
@@ -206,63 +137,90 @@ public final class LibraryFragment extends Fragment {
             }
 
             public boolean areContentsTheSame(LibraryModel.Item a, LibraryModel.Item b) {
-              return a.title.equals(b.title) && a.detail.equals(b.detail);
+              return a.title.equals(b.title)
+                  && a.detail.equals(b.detail)
+                  && a.contextText.equals(b.contextText)
+                  && a.preview.equals(b.preview);
             }
           });
     }
 
     @Override
     public Holder onCreateViewHolder(ViewGroup parent, int type) {
-      LinearLayout row = new LinearLayout(requireContext());
-      row.setGravity(Gravity.CENTER_VERTICAL);
-      row.setPadding(0, Ui.dp(requireContext(), 12), 0, Ui.dp(requireContext(), 12));
+      LinearLayout row = Ui.column(requireContext());
       row.setLayoutParams(new RecyclerView.LayoutParams(-1, -2));
-      ImageButton open = icon(R.drawable.ic_play, getString(R.string.play));
-      row.addView(
-          open,
+      LinearLayout cardBody = Ui.card(row);
+      MaterialCardView card = (MaterialCardView) cardBody.getParent();
+      card.setClickable(true);
+      card.setFocusable(true);
+      LinearLayout header = new LinearLayout(requireContext());
+      header.setGravity(Gravity.CENTER_VERTICAL);
+      cardBody.addView(header);
+      TextView title = new TextView(requireContext());
+      title.setTextSize(20);
+      title.setTypeface(title.getTypeface(), android.graphics.Typeface.BOLD);
+      title.setTextColor(
+          Ui.color(requireContext(), com.google.android.material.R.attr.colorOnSurface));
+      header.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
+      ImageButton play =
+          FileActions.icon(requireContext(), R.drawable.ic_play, getString(R.string.play));
+      header.addView(
+          play,
           new LinearLayout.LayoutParams(Ui.dp(requireContext(), 48), Ui.dp(requireContext(), 48)));
-      LinearLayout labels = Ui.column(requireContext());
-      row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
-      TextView title = Ui.text(labels, "", 17, false), detail = Ui.text(labels, "", 14, true);
-      ImageButton more = icon(R.drawable.ic_more, getString(R.string.more_options));
-      row.addView(
+      ImageButton more =
+          FileActions.icon(requireContext(), R.drawable.ic_more, getString(R.string.more_options));
+      header.addView(
           more,
           new LinearLayout.LayoutParams(Ui.dp(requireContext(), 48), Ui.dp(requireContext(), 48)));
-      return new Holder(row, title, detail, more, open);
+      TextView detail = Ui.text(cardBody, "", 14, true),
+          context = Ui.text(cardBody, "", 14, false),
+          preview = Ui.text(cardBody, "", 14, true);
+      preview.setMaxLines(2);
+      preview.setEllipsize(android.text.TextUtils.TruncateAt.END);
+      return new Holder(row, card, title, detail, context, preview, play, more);
     }
 
     @Override
     public void onBindViewHolder(Holder h, int position) {
       LibraryModel.Item item = getItem(position);
-      h.open.setImageResource(item.audio ? R.drawable.ic_play : R.drawable.ic_library);
-      h.open.setContentDescription(
-          getString(item.audio ? R.string.play : R.string.open) + ": " + item.title);
-      h.open.setOnClickListener(v -> open(item));
       h.title.setText(item.title);
       h.detail.setText(item.detail);
-      h.itemView.setOnClickListener(v -> open(item));
-      h.itemView.setFocusable(true);
-      h.itemView.setContentDescription(
-          item.title
-              + ". "
-              + item.detail
-              + ". "
-              + getString(item.audio ? R.string.play : R.string.open));
+      h.context.setText(item.contextText);
+      h.preview.setText(item.preview);
+      h.context.setVisibility(item.contextText.isEmpty() ? View.GONE : View.VISIBLE);
+      h.preview.setVisibility(item.preview.isEmpty() ? View.GONE : View.VISIBLE);
+      h.play.setImageResource(item.audio ? R.drawable.ic_play : R.drawable.ic_library);
+      h.play.setContentDescription(
+          getString(item.audio ? R.string.play : R.string.open) + ": " + item.title);
+      h.play.setOnClickListener(v -> open(item, true));
+      h.card.setOnClickListener(v -> open(item, false));
       h.more.setContentDescription(getString(R.string.more_options) + ": " + item.title);
-      h.more.setOnClickListener(v -> options(v, item));
+      h.more.setOnClickListener(v -> FileActions.options(LibraryFragment.this, h.more, item.file));
     }
   }
 
   private static final class Holder extends RecyclerView.ViewHolder {
-    final TextView title, detail;
-    final ImageButton more, open;
+    final MaterialCardView card;
+    final TextView title, detail, context, preview;
+    final ImageButton play, more;
 
-    Holder(View row, TextView title, TextView detail, ImageButton more, ImageButton open) {
+    Holder(
+        View row,
+        MaterialCardView card,
+        TextView title,
+        TextView detail,
+        TextView context,
+        TextView preview,
+        ImageButton play,
+        ImageButton more) {
       super(row);
+      this.card = card;
       this.title = title;
       this.detail = detail;
+      this.context = context;
+      this.preview = preview;
+      this.play = play;
       this.more = more;
-      this.open = open;
     }
   }
 }

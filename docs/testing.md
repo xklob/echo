@@ -139,3 +139,17 @@ The signed minified production build upgrades 2.1.1 in place. Its original insta
 A native save from the signed app produced a 327,572-byte Opus clip; ffmpeg independently decoded it as 48 kHz mono, with approximately 60 seconds of audio. Native playback, pause and seeking were exercised.
 
 Native visual checks cover portrait, landscape navigation rail, 160% text size with scrollable controls, and both color themes. The README gallery contains direct emulator screenshots of the app using generated test content. Physical Pixel, battery, Bluetooth and OEM validation remain outstanding; the earlier resource soak was not repeated for this UI release.
+
+## 2.3.0 clip library and custom duration
+
+19 JVM tests, debug/release lint and all APK builds pass. The final Android 11 and Android 17 suites each report `OK (30 tests)`: 29 functional checks and the skipped opt-in soak. Seven new device checks cover audio-only entries, exact time associations and shared context, missing metadata, GPX precision/segments/malformed XML, renamed trace metadata, detail playback/map recreation and custom-duration persistence. The three new JVM tests cover interval boundaries, overlapping captures and invalid/overflowing intervals. The Android 11 run also caught a newer Java convenience API in a test fixture; it now uses the compatible File-to-Path conversion.
+
+An earlier Android 17 run timed out in Android's app-sharing picker. The isolated projection retry passed, followed by the clean full final run. No product behavior was changed to bypass native screen-sharing consent.
+
+Native review covers both themes, a no-GPS clip, timestamped context, playback, 140% text in landscape and a real force-stop/relaunch retaining a selected 123-second custom value. With Wi-Fi/mobile data disabled and the map cache removed, the detail displays the local route and saved coordinates. This check caught a map SDK offline request that otherwise waited indefinitely; the app now selects a local style immediately when disconnected and bounds an online style load to 12 seconds. The README uses direct screenshots with generated demo audio, notes and a synthetic route; these are not personal recordings or a real traveled route.
+
+The minified production APK is 86,419,017 bytes, versionCode 20, SHA-256 `b47c9ee9fb73ffcc979661cef5b57b262125a0da4b52d5ddc55b63a214a859f0`. The production certificate remains `9830b437d226aa247e46793d75dd12b6e927b1bccc448551958490bdbebd91bc`. APK signature, 16 KiB ZIP alignment and all ARM64 native load-segment checks pass, including MapLibre. No test fixtures, model weights or signing credentials are bundled.
+
+The signed APK upgraded the existing 2.2.0 fixture in place. Hashes of all 19 existing audio, context, metadata and preference files were unchanged, as was the original install timestamp. Native recording/save produced a 66.7535-second clip with 12 GPS fixes inside its interval; its map rendered in the minified app and playback/seek/pause worked. Independent ffmpeg decoding returned exactly the metadata's 3,204,168 captured samples. A selected 123-second custom value also survived force-stop/relaunch in the signed app.
+
+Physical Pixel, battery, Bluetooth and OEM checks remain outstanding. The earlier resource soak was not repeated for this release.

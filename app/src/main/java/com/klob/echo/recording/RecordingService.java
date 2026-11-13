@@ -588,7 +588,10 @@ public final class RecordingService extends Service {
               clips.copyToTree(sidecar, tree, cancelled::get);
             }
             progress = 100;
-            message = "Saved recording to Library.";
+            message =
+                tools.flushLocationForClip()
+                    ? "Saved recording to Library."
+                    : "Recording saved. Location data is still waiting to be saved.";
           } catch (CancellationException e) {
             message =
                 completed == null

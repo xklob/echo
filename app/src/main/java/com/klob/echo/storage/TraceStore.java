@@ -20,7 +20,9 @@ public final class TraceStore {
   }
 
   public static String timestampName(long millis) {
-    return new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss.SSS", Locale.ROOT).format(new Date(millis));
+    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss.SSS'Z'", Locale.ROOT);
+    format.setTimeZone(TimeZone.getTimeZone("UTC"));
+    return format.format(new Date(millis));
   }
 
   public static File uniqueFile(File directory, String base, String extension) {
@@ -50,7 +52,12 @@ public final class TraceStore {
   }
 
   public List<File> list() {
-    File[] files = root.listFiles(f -> f.isFile() && !f.getName().endsWith(".part"));
+    File[] files =
+        root.listFiles(
+            f ->
+                f.isFile()
+                    && !f.getName().endsWith(".part")
+                    && !f.getName().endsWith(".meta.json"));
     return files == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(files));
   }
 }

@@ -61,6 +61,11 @@ public final class ToolsFragment extends ServiceFragment {
     Ui.heading(body, R.string.notes_surveys);
     Ui.row(
         body,
+        R.string.saved_extras,
+        R.string.saved_extras_help,
+        () -> open("extras", R.string.saved_extras));
+    Ui.row(
+        body,
         R.string.new_note,
         R.string.new_note_help,
         () -> open("tool_note", R.string.new_note));

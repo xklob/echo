@@ -22,6 +22,9 @@ public final class AppSettings {
     if (value instanceof Boolean) edit.putBoolean(key, (Boolean) value);
     else if (value instanceof Integer) edit.putInt(key, (Integer) value);
     else edit.putString(key, value.toString());
+    if (key.equals("custom_lookback_seconds")) {
+      edit.putInt("lookback_seconds", (Integer) value).putBoolean("lookback_custom", true);
+    }
     if (nextRecording && RecordingService.sessionActive)
       edit.putBoolean("history_settings_pending", true);
     edit.apply();
@@ -35,6 +38,33 @@ public final class AppSettings {
         RecordingService.resumeNotification(context);
       }
     }
+  }
+
+  public static int lookbackSeconds(Context context) {
+    return Math.max(1, Math.min(86400, prefs(context).getInt("lookback_seconds", 60)));
+  }
+
+  public static int customLookbackSeconds(Context context) {
+    int current = lookbackSeconds(context);
+    int fallback = current != 60 && current != 300 && current != 900 ? current : 60;
+    return Math.max(1, Math.min(86400, prefs(context).getInt("custom_lookback_seconds", fallback)));
+  }
+
+  public static boolean usesCustomLookback(Context context) {
+    int n = lookbackSeconds(context);
+    return prefs(context).getBoolean("lookback_custom", n != 60 && n != 300 && n != 900);
+  }
+
+  public static void selectLookback(Context context, int seconds, boolean custom) {
+    int remembered = customLookbackSeconds(context);
+    SharedPreferences.Editor edit =
+        prefs(context)
+            .edit()
+            .putInt("lookback_seconds", Math.max(1, Math.min(86400, seconds)))
+            .putBoolean("lookback_custom", custom);
+    edit.putInt(
+        "custom_lookback_seconds", custom ? Math.max(1, Math.min(86400, seconds)) : remembered);
+    edit.apply();
   }
 
   public static void applyTheme(Context context) {

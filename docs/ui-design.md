@@ -2,7 +2,9 @@
 
 Record is the primary action. The first card controls capture and shows the actual available audio history. The second card selects and saves a recent clip. Automatic/continuous saving is secondary. The app never labels uncaptured time as available audio.
 
-Library puts readable titles, date, duration and file size before filenames. Categories filter audio, notes and other captures. Playback stays in a dismissible sheet; share, rename and delete use explicit item actions. Destructive deletion requires confirmation and describes which copy is removed.
+Library lists audio clips with readable titles, date, duration, source and available GPS/note/capture context. Tapping a card opens a focused recording detail with inline playback, a native map and timestamped related items. Saved notes and captures remain accessible in a secondary Library menu and Tools row. Share, rename and delete use explicit actions; deleting a clip keeps independent context files. GPS gaps are not joined into invented routes.
+
+Record offers three presets and a Custom chip. The selected duration and the last custom value persist independently, so switching to a preset does not erase the custom value. The custom-duration row always displays the remembered value.
 
 Tools distinguish a durable enabled choice from its current ability to run. Location, keywords and camera resume with recording. Screen sharing remains a native per-session consent flow. Notes, questionnaires and server backup have focused setup screens rather than a single form full of unrelated actions.
 

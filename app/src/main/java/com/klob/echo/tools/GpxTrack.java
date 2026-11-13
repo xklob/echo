@@ -107,7 +107,7 @@ public class GpxTrack {
   public synchronized int writeTo(File file, String trackName, boolean clear) throws IOException {
     if (points.isEmpty()) return 0;
 
-    final SimpleDateFormat time = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+    final SimpleDateFormat time = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
     time.setTimeZone(TimeZone.getTimeZone("UTC"));
     final Date date = new Date();
 

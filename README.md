@@ -2,15 +2,16 @@
 
 Save audio from the past. This fork consolidates the recorder and useful additions from the Echo fork network into one Android app.
 
-Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original Echo. Current release: [2.2.0](https://github.com/xklob/echo/releases/tag/v2.2.0), versionCode `19`.
+Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original Echo. Current release: [2.3.0](https://github.com/xklob/echo/releases/tag/v2.3.0), versionCode `20`.
 
 ## Screenshots
 
-Echo 2.2.0 on an Android 17 emulator, using generated test recordings. System, Light and Dark themes are available; System is the default.
+Echo 2.3.0 on an Android 17 emulator, using generated demo recordings, notes and GPS data. System, Light and Dark themes are available; System is the default.
 
 <p>
   <img src="docs/screenshots/record-dark.png" width="280" alt="Record and save recent audio in the black and green theme" />
-  <img src="docs/screenshots/library.png" width="280" alt="Saved audio with playback and seeking controls" />
+  <img src="docs/screenshots/library.png" width="280" alt="Audio clips with GPS and related-note previews" />
+  <img src="docs/screenshots/clip-detail.png" width="280" alt="Recording detail with playback and a map of saved GPS fixes" />
   <img src="docs/screenshots/tools.png" width="280" alt="Persistent location, keyword and camera tools" />
   <img src="docs/screenshots/settings.png" width="280" alt="Organized recording settings" />
   <img src="docs/screenshots/keywords.png" width="280" alt="Offline keyword alerts and speech model setup" />
@@ -30,7 +31,13 @@ These are separate from unfinished source integration. See the [custom-feature b
 
 Open **Record**, tap **START RECORDING**, allow microphone access, then choose how far back to keep and tap **SAVE CLIP**. **STOP RECORDING** stays stopped. After a reboot or process recreation, open Echo and tap **RESUME RECORDING**; Android does not permit unrestricted microphone startup from a boot receiver.
 
-Use **Library** to play, share, rename and delete saved items, **Tools** for optional capture and notes, and **Settings** for recording preferences. Bottom navigation becomes a side rail in wider windows.
+Use **Library** to browse audio clips. Cards show duration, source and available context. Tap a clip for playback, GPS locations, related notes/captures and recording details; its overflow menu has share, rename and delete. **Saved notes and captures** in the Library menu or Tools opens the separate files. **Settings** holds recording preferences. Bottom navigation becomes a side rail in wider windows.
+
+**Custom duration** remembers your entered value and whether it is selected, including after reopening the app. Selecting a preset keeps that custom value available. Saving uses as much of the selected duration as is actually present in history.
+
+Clip context is matched by time. GPS fixes and notes inside the captured interval appear with that clip; videos may overlap the interval. Overlapping audio clips can share the same context. GPS gaps remain separate route segments. Files without reliable recording timestamps remain playable but are not given guessed context. Renaming preserves associations; deleting audio keeps the separate notes, captures and GPS files.
+
+Maps use MapLibre with OpenFreeMap basemaps. The route is drawn from local GPS files. Online map requests disclose the viewed area to the tile provider; Echo does not upload the GPX file or audio to it. Without a basemap connection, saved coordinates and the route remain available. Maps do not request live location permission to display an existing clip.
 
 Settings control history budgets, quality, format, automatic saves and listening rules. Each switch saves immediately; value dialogs validate before saving. There is no global Apply button. Changes are saved while recording; history, quality and activity changes take effect when recording next starts. Invalid values are highlighted instead of silently ignored. Equal start/end hours mean all day; overnight windows are supported. Android can delay schedule transitions when exact-alarm access is unavailable.
 

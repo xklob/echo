@@ -21,8 +21,8 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         minSdk 30
         targetSdk 37
-        versionCode 19
-        versionName "2.2.0"
+        versionCode 20
+        versionName "2.3.0"
     }
 
     signingConfigs {
@@ -69,6 +69,7 @@ dependencies {
     implementation 'androidx.fragment:fragment:1.9.1'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-savedstate:2.11.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
+    implementation 'org.maplibre.gl:android-sdk-opengl:13.7.1'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test:runner:1.5.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

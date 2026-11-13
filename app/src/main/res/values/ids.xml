@@ -16,4 +16,10 @@
     <item name="note_text" type="id" />
     <item name="clip_progress" type="id" />
     <item name="playback_seek" type="id" />
+    <item name="record_custom_chip" type="id" />
+    <item name="clip_map" type="id" />
+    <item name="clip_player" type="id" />
+    <item name="clip_context" type="id" />
+    <item name="clip_location_status" type="id" />
+    <item name="clip_play_pause" type="id" />
 </resources>

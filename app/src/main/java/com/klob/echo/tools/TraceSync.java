@@ -67,6 +67,8 @@ public final class TraceSync {
     for (File file : new ArrayList<>(files)) {
       File metadata = new File(file.getPath() + ".json");
       if (metadata.isFile()) files.add(metadata);
+      File traceMetadata = com.klob.echo.library.TraceItem.metadata(file);
+      if (traceMetadata.isFile()) files.add(traceMetadata);
     }
     files.sort(Comparator.comparingLong(File::lastModified));
     int uploaded = 0, oversized = 0;

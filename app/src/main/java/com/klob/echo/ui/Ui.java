@@ -132,6 +132,10 @@ final class Ui {
   }
 
   static View row(LinearLayout parent, int title, CharSequence detail, Runnable action) {
+    return row(parent, parent.getContext().getString(title), detail, action);
+  }
+
+  static View row(LinearLayout parent, CharSequence title, CharSequence detail, Runnable action) {
     Context c = parent.getContext();
     LinearLayout row = new LinearLayout(c);
     row.setGravity(Gravity.CENTER_VERTICAL);
@@ -155,7 +159,7 @@ final class Ui {
     row.setBackgroundResource(value.resourceId);
     row.setFocusable(true);
     row.setOnClickListener(v -> action.run());
-    row.setContentDescription(c.getString(title) + ". " + detail);
+    row.setContentDescription(title + ". " + detail);
     parent.addView(row, new LinearLayout.LayoutParams(-1, -2));
     return row;
   }

@@ -12,6 +12,7 @@ import androidx.fragment.app.DialogFragment;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import com.google.android.material.chip.Chip;
 import com.google.android.material.navigation.NavigationBarView;
 import com.klob.echo.settings.AppSettings;
 import com.klob.echo.storage.*;
@@ -79,6 +80,52 @@ public class InterfaceDeviceTest {
           dialog.getListView().performItemClick(null, choice, choice);
         });
     InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+  }
+
+  @Test
+  public void customDurationSurvivesPresetsNavigationRecreationAndRelaunch() throws Exception {
+    // An older installation had only the active duration; preserve it during migration.
+    AppSettings.prefs(context).edit().putInt("lookback_seconds", 137).commit();
+    try (ActivityScenario<MainActivity> activity = ActivityScenario.launch(MainActivity.class)) {
+      activity.onActivity(
+          a -> {
+            assertTrue(((Chip) a.findViewById(R.id.record_custom_chip)).isChecked());
+            find(a.getWindow().getDecorView(), "1 min").performClick();
+            assertEquals(137, AppSettings.customLookbackSeconds(context));
+            a.findViewById(R.id.record_custom_chip).performClick();
+            assertEquals(137, AppSettings.lookbackSeconds(context));
+            a.findViewById(R.id.record_duration).performClick();
+            a.getSupportFragmentManager().executePendingTransactions();
+            AlertDialog dialog =
+                (AlertDialog)
+                    ((DialogFragment) a.getSupportFragmentManager().findFragmentByTag("duration"))
+                        .requireDialog();
+            ((EditText) dialog.findViewById(R.id.input_value)).setText("123");
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            ((NavigationBarView) a.findViewById(R.id.navigation))
+                .setSelectedItemId(R.id.nav_settings);
+            ((NavigationBarView) a.findViewById(R.id.navigation))
+                .setSelectedItemId(R.id.nav_record);
+          });
+      activity.recreate();
+      activity.onActivity(
+          a -> {
+            Chip custom = a.findViewById(R.id.record_custom_chip);
+            assertTrue(custom.isChecked());
+            assertTrue(custom.getText().toString().contains("2:03"));
+            assertEquals(123, AppSettings.lookbackSeconds(context));
+            find(a.getWindow().getDecorView(), "5 min").performClick();
+          });
+    }
+    try (ActivityScenario<MainActivity> reopened = ActivityScenario.launch(MainActivity.class)) {
+      reopened.onActivity(
+          a -> {
+            assertEquals(300, AppSettings.lookbackSeconds(context));
+            assertFalse(((Chip) a.findViewById(R.id.record_custom_chip)).isChecked());
+            a.findViewById(R.id.record_custom_chip).performClick();
+            assertEquals(123, AppSettings.lookbackSeconds(context));
+          });
+    }
   }
 
   @Test

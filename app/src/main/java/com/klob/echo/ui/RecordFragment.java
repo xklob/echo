@@ -24,6 +24,9 @@ public final class RecordFragment extends ServiceFragment {
   private MaterialSwitch continuous;
   private LinearProgressIndicator progress;
   private String lastMessage = "";
+  private ChipGroup durations;
+  private Chip customDuration;
+  private TextView customLabel;
   private final ActivityResultLauncher<String> mic =
       registerForActivityResult(
           new ActivityResultContracts.RequestPermission(),
@@ -67,30 +70,53 @@ public final class RecordFragment extends ServiceFragment {
     LinearLayout clip = Ui.card(body);
     Ui.text(clip, R.string.save_recent, 20, false);
     Ui.text(clip, R.string.save_help, 14, true);
-    ChipGroup chips = new ChipGroup(requireContext());
+    ChipGroup chips = durations = new ChipGroup(requireContext());
     chips.setSingleSelection(true);
     chips.setSelectionRequired(true);
     clip.addView(chips);
-    int chosen = prefs().getInt("lookback_seconds", 60);
     for (int seconds : new int[] {60, 300, 900}) {
       Chip chip = new Chip(requireContext());
+      chip.setId(View.generateViewId());
       chip.setText(getString(R.string.minutes_short, seconds / 60));
       chip.setCheckable(true);
-      chip.setChecked(chosen == seconds);
       chip.setEnsureMinTouchTargetSize(true);
       chips.addView(chip);
       chip.setOnClickListener(
-          v -> AppSettings.save(requireContext(), "lookback_seconds", seconds, false));
+          v -> {
+            AppSettings.selectLookback(requireContext(), seconds, false);
+            renderDuration();
+          });
     }
-    Ui.row(
-            clip,
-            R.string.duration_custom,
-            R.string.duration_seconds,
-            () ->
-                PreferenceDialog.number(
-                        "lookback_seconds", R.string.duration_seconds, 0, 60, 1, 86400, false)
-                    .show(getParentFragmentManager(), "duration"))
-        .setId(R.id.record_duration);
+    customDuration = new Chip(requireContext());
+    customDuration.setId(R.id.record_custom_chip);
+    customDuration.setCheckable(true);
+    customDuration.setEnsureMinTouchTargetSize(true);
+    chips.addView(customDuration);
+    customDuration.setOnClickListener(
+        v -> {
+          AppSettings.selectLookback(
+              requireContext(), AppSettings.customLookbackSeconds(requireContext()), true);
+          renderDuration();
+        });
+    LinearLayout customRow =
+        (LinearLayout)
+            Ui.row(
+                clip,
+                R.string.duration_custom,
+                R.string.duration_seconds,
+                () ->
+                    PreferenceDialog.number(
+                            "custom_lookback_seconds",
+                            R.string.duration_seconds,
+                            R.string.custom_duration_help,
+                            AppSettings.customLookbackSeconds(requireContext()),
+                            1,
+                            86400,
+                            false)
+                        .show(getParentFragmentManager(), "duration"));
+    customRow.setId(R.id.record_duration);
+    customLabel = (TextView) ((LinearLayout) customRow.getChildAt(0)).getChildAt(1);
+    renderDuration();
     selection = Ui.text(clip, R.string.history_empty, 16, false);
     estimate = Ui.text(clip, "", 14, true);
     save =
@@ -100,7 +126,7 @@ public final class RecordFragment extends ServiceFragment {
             true,
             () -> {
               if (service != null)
-                service.saveLookback(prefs().getInt("lookback_seconds", 60), "manual");
+                service.saveLookback(AppSettings.lookbackSeconds(requireContext()), "manual");
             });
     save.setId(R.id.record_save);
     save.setEnabled(false);
@@ -134,13 +160,25 @@ public final class RecordFragment extends ServiceFragment {
             "preference_saved",
             this,
             (k, b) -> {
-              if (b.getString("key", "").equals("lookback_seconds")) {
-                int n = prefs().getInt("lookback_seconds", 60);
-                for (int i = 0; i < chips.getChildCount(); i++)
-                  ((Chip) chips.getChildAt(i)).setChecked(n == new int[] {60, 300, 900}[i]);
-              }
+              if (b.getString("key", "").equals("custom_lookback_seconds")) renderDuration();
             });
     return root;
+  }
+
+  private void renderDuration() {
+    if (durations == null) return;
+    int value = AppSettings.lookbackSeconds(requireContext());
+    int custom = AppSettings.customLookbackSeconds(requireContext());
+    Ui.setText(
+        customDuration, getString(R.string.custom_duration_chip, Ui.duration(custom * 48000L)));
+    Ui.setText(customLabel, getString(R.string.custom_duration_value, custom));
+    int selected = customDuration.getId();
+    if (!AppSettings.usesCustomLookback(requireContext())) {
+      int[] presets = {60, 300, 900};
+      for (int i = 0; i < presets.length; i++)
+        if (presets[i] == value) selected = durations.getChildAt(i).getId();
+    }
+    durations.check(selected);
   }
 
   @Override
@@ -215,7 +253,7 @@ public final class RecordFragment extends ServiceFragment {
             s.isSessionActive()
                 ? R.string.record_stop
                 : s.isEnabled() ? R.string.record_resume : R.string.record_start));
-    int chosen = prefs().getInt("lookback_seconds", 60);
+    int chosen = AppSettings.lookbackSeconds(requireContext());
     long samples = Math.min(chosen * 48000L, s.availableSamples);
     Ui.setText(
         selection,

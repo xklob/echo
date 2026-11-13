@@ -314,7 +314,7 @@ public final class CaptureTools {
           LocationManager.GPS_PROVIDER, 5000, 0, locationListener, Looper.getMainLooper());
       gps = true;
       main.postDelayed(flushTrack, 60000);
-      service.message = "Location logging is active. Routes are saved to Library.";
+      service.message = "Location logging is active. Saved clips include matching GPS fixes.";
     } catch (RuntimeException e) {
       service.message = "GPS unavailable or permission denied.";
     }
@@ -322,22 +322,39 @@ public final class CaptureTools {
 
   private void writeTrack() {
     if (track.size() == 0) return;
-    submit(
-        () -> {
-          File partial = null;
-          try {
-            partial =
-                TraceStore.uniqueFile(
-                    traces.directory(), TraceStore.timestampName(track.firstFixMillis()), ".gpx");
-            track.writeTo(partial, "Echo location trace", false);
-            traces.complete(partial);
-            track.acknowledgeWritten();
-            service.message = "Saved location trace to Library.";
-          } catch (IOException e) {
-            if (partial != null) partial.delete();
-            service.message = "The route could not be saved. Check free storage and try again.";
-          }
-        });
+    submit(() -> persistTrack());
+  }
+
+  /** The export worker waits for buffered fixes so a newly saved clip can display its route. */
+  public boolean flushLocationForClip() {
+    if (track.size() == 0) return true;
+    try {
+      return io.submit(this::persistTrack).get(5, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return false;
+    } catch (ExecutionException | TimeoutException | RejectedExecutionException e) {
+      return false;
+    }
+  }
+
+  private boolean persistTrack() {
+    if (track.size() == 0) return true;
+    File partial = null;
+    try {
+      partial =
+          TraceStore.uniqueFile(
+              traces.directory(), TraceStore.timestampName(track.firstFixMillis()), ".gpx");
+      track.writeTo(partial, "Echo location trace", false);
+      traces.complete(partial);
+      track.acknowledgeWritten();
+      service.message = "Location data saved.";
+      return true;
+    } catch (IOException e) {
+      if (partial != null) partial.delete();
+      service.message = "The route could not be saved. Check free storage and try again.";
+      return false;
+    }
   }
 
   public void note(String text) {

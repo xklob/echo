@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.3.0 // 2026-11-12
+
+- Make audio clips the primary Library entries, with duration, source, GPS coordinates and related-note/capture previews.
+- Open each clip in a detail screen with playback, seeking, a native interactive map, timestamped context and recording metadata.
+- Match saved GPS fixes, notes, keyword events, surveys and captures to the recording interval. Preserve location gaps and shared context across overlapping clips; keep notes and captures accessible separately.
+- Flush pending GPS fixes when a clip is saved. Preserve millisecond GPS timestamps and stable UTC trace timestamps; renamed traces keep their original time and type in a sidecar.
+- Persist custom duration and its selected state across navigation and app restarts. Switching to a preset no longer loses the remembered custom value, including values from older installations.
+- Keep recording identity, signing, private files and settings compatible with earlier releases. Remove the replaced playback-sheet implementation and update the screenshot gallery.
+
 ## 2.2.0 // 2026-11-12
 
 - Rebuild the interface around Record, Library, Tools and Settings, with adaptive bottom navigation / side rail, focused detail screens and native back navigation.

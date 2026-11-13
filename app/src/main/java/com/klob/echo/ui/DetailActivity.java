@@ -19,6 +19,13 @@ public final class DetailActivity extends AppCompatActivity {
         .putExtra("title", title);
   }
 
+  public static void openClip(Context context, String path, boolean play) {
+    context.startActivity(
+        intent(context, "clip", R.string.clip_details)
+            .putExtra("file", path)
+            .putExtra("play", play));
+  }
+
   @Override
   public void onCreate(Bundle state) {
     super.onCreate(state);
@@ -27,17 +34,28 @@ public final class DetailActivity extends AppCompatActivity {
     MaterialToolbar toolbar = findViewById(R.id.toolbar);
     toolbar.setTitle(getIntent().getIntExtra("title", R.string.app_name));
     toolbar.setNavigationIcon(R.drawable.ic_back);
+    toolbar.setNavigationIconTint(
+        Ui.color(this, com.google.android.material.R.attr.colorOnSurface));
     toolbar.setNavigationContentDescription(R.string.back);
     toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
     if (state == null) {
       String page = getIntent().getStringExtra("page");
       if (page == null) page = "history";
       Fragment f =
-          page.equals("survey_run")
-              ? new SurveyFragment()
-              : page.startsWith("tool_") ? new ToolDetailFragment() : new SettingsDetailFragment();
+          page.equals("clip")
+              ? new ClipDetailFragment()
+              : page.equals("extras")
+                  ? new LibraryFragment()
+                  : page.equals("survey_run")
+                      ? new SurveyFragment()
+                      : page.startsWith("tool_")
+                          ? new ToolDetailFragment()
+                          : new SettingsDetailFragment();
       Bundle args = new Bundle();
       args.putString("page", page);
+      args.putBoolean("extras", page.equals("extras"));
+      args.putString("file", getIntent().getStringExtra("file"));
+      args.putBoolean("play", getIntent().getBooleanExtra("play", false));
       f.setArguments(args);
       getSupportFragmentManager().beginTransaction().replace(R.id.content, f).commit();
     }
