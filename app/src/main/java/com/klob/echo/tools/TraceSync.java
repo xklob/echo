@@ -69,6 +69,11 @@ public final class TraceSync {
       if (metadata.isFile()) files.add(metadata);
       File traceMetadata = com.klob.echo.library.TraceItem.metadata(file);
       if (traceMetadata.isFile()) files.add(traceMetadata);
+      if (ClipStore.isAudio(file.getName()))
+        for (String suffix : com.klob.echo.speech.ClipAnalysis.SUFFIXES) {
+          File analysis = com.klob.echo.speech.ClipAnalysis.file(file, suffix);
+          if (analysis.isFile()) files.add(analysis);
+        }
     }
     files.sort(Comparator.comparingLong(File::lastModified));
     int uploaded = 0, oversized = 0;

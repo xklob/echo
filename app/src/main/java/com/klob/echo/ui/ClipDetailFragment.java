@@ -13,6 +13,8 @@ import java.io.File;
 
 public final class ClipDetailFragment extends Fragment {
   private LibraryModel model;
+  private ClipAnalysisModel analysis;
+  private ClipSpeechPanel speech;
   private LinearLayout body;
   private AudioPlayback player;
   private RecordingMap map;
@@ -25,6 +27,7 @@ public final class ClipDetailFragment extends Fragment {
   public void onCreate(Bundle state) {
     super.onCreate(state);
     model = new ViewModelProvider(requireActivity()).get(LibraryModel.class);
+    analysis = new ViewModelProvider(requireActivity()).get(ClipAnalysisModel.class);
     if (state != null) {
       playerState = state.getBundle("player");
       mapState = state.getBundle("map");
@@ -51,6 +54,11 @@ public final class ClipDetailFragment extends Fragment {
   @Override
   public void onViewCreated(View view, Bundle state) {
     model.detail.observe(getViewLifecycleOwner(), this::show);
+    analysis.data.observe(
+        getViewLifecycleOwner(),
+        display -> {
+          if (speech != null) speech.render(display);
+        });
     model.feedback.observe(
         getViewLifecycleOwner(),
         res -> {
@@ -80,6 +88,7 @@ public final class ClipDetailFragment extends Fragment {
                 "delete:" + shown.file.getPath());
           if (action.getItemId() == 4) {
             revision = "";
+            analysis.retryWaveform();
             reload();
           }
           return true;
@@ -138,6 +147,11 @@ public final class ClipDetailFragment extends Fragment {
     playerState = null;
     audio.addView(player, new LinearLayout.LayoutParams(-1, -2));
     if (started) player.start();
+    LinearLayout speechCard = Ui.card(body);
+    speech = new ClipSpeechPanel(this, analysis, item.file, player);
+    speechCard.addView(speech);
+    analysis.open(item.file);
+    if (analysis.data.getValue() != null) speech.render(analysis.data.getValue());
     LinearLayout location = Ui.card(body);
     Ui.heading(location, R.string.clip_location);
     if (data.locationCount > 0) {
@@ -219,6 +233,7 @@ public final class ClipDetailFragment extends Fragment {
   }
 
   private void release() {
+    speech = null;
     if (player != null) {
       player.stop();
       player = null;

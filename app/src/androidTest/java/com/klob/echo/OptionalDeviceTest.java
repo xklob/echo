@@ -11,10 +11,9 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.klob.echo.recording.RecordingService;
 import com.klob.echo.storage.Io;
 import com.klob.echo.storage.TraceStore;
+import com.klob.echo.tools.CameraCommandDetector;
 import com.klob.echo.tools.GpxTrack;
-import com.klob.echo.tools.KeywordDetector;
 import com.klob.echo.tools.ModelInstaller;
-import com.klob.echo.tools.Survey;
 import com.klob.echo.tools.SyncCredentials;
 import com.klob.echo.tools.TraceSync;
 import com.klob.echo.ui.MainActivity;
@@ -59,7 +58,7 @@ public class OptionalDeviceTest {
   }
 
   @Test
-  public void gpxSurveyAndProtectedCredentials() throws Exception {
+  public void gpxAndProtectedCredentials() throws Exception {
     GpxTrack track = new GpxTrack();
     track.add(37.5, -77.6, 10, 1000);
     track.add(37.6, -77.7, Double.NaN, 70000);
@@ -76,19 +75,6 @@ public class OptionalDeviceTest {
     } catch (IOException expected) {
     }
     assertEquals(1, track.size());
-    String json =
-        "{\"title\":\"Fixture\",\"start\":\"a\",\"nodes\":{\"a\":{\"type\":\"choice\",\"options\":[{\"label\":\"next\",\"next\":\"b\"}]},\"b\":{\"type\":\"end\"}}}";
-    Survey survey = Survey.parse(json);
-    assertEquals("b", survey.node("a").options.get(0).next);
-    assertTrue(
-        survey
-            .toJson(Collections.singletonList(new Survey.Answer("a", "Question", "Answer")), 1000)
-            .contains("Answer"));
-    try {
-      Survey.parse(json.replace("\"next\":\"b\"", "\"next\":\"missing\""));
-      fail();
-    } catch (org.json.JSONException expected) {
-    }
     String generatedFixture = "test-only-not-a-real-token-00000000000000000000";
     SyncCredentials.set(context, generatedFixture);
     assertEquals(generatedFixture, SyncCredentials.get(context));
@@ -129,24 +115,43 @@ public class OptionalDeviceTest {
                     new Intent(a, RecordingService.class)
                         .setAction(RecordingService.ACTION_START)));
         await(() -> s[0].captureState.equals("Listening"));
-        int before = new TraceStore(context).list().size();
         scenario.onActivity(a -> s[0].tools.camera(true));
         assertTrue(s[0].tools.camera.isRunning());
-        long samples = s[0].endSample;
-        scenario.onActivity(a -> s[0].tools.camera.captureNow());
-        await(() -> new TraceStore(context).list().size() > before);
-        assertTrue(s[0].endSample > samples);
-        File video = null;
-        for (File f : new TraceStore(context).list()) if (f.getName().endsWith(".mp4")) video = f;
-        assertNotNull(video);
-        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-        try {
-          retriever.setDataSource(video.getPath());
-          assertEquals(
-              "yes", retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO));
-          assertNull(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO));
-        } finally {
-          retriever.release();
+        s[0].tools.camera.configure(5);
+        for (String facing : new String[] {"back", "front"}) {
+          Set<File> before = new HashSet<>(new TraceStore(context).list());
+          long samples = s[0].endSample;
+          if (!s[0].tools.camera.hasCamera(facing)) {
+            scenario.onActivity(a -> s[0].tools.camera.captureNow(facing));
+            await(() -> s[0].tools.camera.status().contains("unavailable"));
+            Thread.sleep(300);
+            assertTrue(s[0].isCapturing());
+            assertTrue(s[0].endSample > samples);
+            assertEquals(before, new HashSet<>(new TraceStore(context).list()));
+            continue;
+          }
+          scenario.onActivity(a -> s[0].tools.camera.captureNow(facing));
+          await(() -> new TraceStore(context).list().stream().anyMatch(f -> !before.contains(f)));
+          assertTrue(s[0].endSample > samples);
+          File video =
+              new TraceStore(context)
+                  .list().stream().filter(f -> !before.contains(f)).findFirst().get();
+          assertTrue(video.getName().contains("_" + facing));
+          MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+          try {
+            retriever.setDataSource(video.getPath());
+            assertEquals(
+                "yes", retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO));
+            assertEquals(
+                "yes", retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO));
+            long duration =
+                Long.parseLong(
+                    retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
+            assertTrue(duration >= 4500 && duration <= 6500);
+          } finally {
+            retriever.release();
+          }
+          await(() -> !s[0].tools.camera.isCapturing());
         }
       } finally {
         s[0].stopListening();
@@ -157,37 +162,38 @@ public class OptionalDeviceTest {
   }
 
   @Test
-  public void installedOfflineKeywordRecognizesFixture() throws Exception {
-    assertKeyword(1);
+  public void installedOfflineCameraCommandsRecognizeBothDirections() throws Exception {
+    assertCommand("back", 1);
+    assertCommand("front", 1);
   }
 
   @Test
   public void quietSpeechRecognizesWithoutAmplitudeGate() throws Exception {
-    assertKeyword(50);
+    assertCommand("back", 50);
   }
 
-  private void assertKeyword(int divisor) throws Exception {
+  private void assertCommand(String face, int divisor) throws Exception {
     ModelInstaller.install(context);
     CountDownLatch heard = new CountDownLatch(1);
-    KeywordDetector detector =
-        new KeywordDetector(
+    CameraCommandDetector detector =
+        new CameraCommandDetector(
             context,
             word -> {
-              if (word.equals("one")) heard.countDown();
+              if (word.equals(face)) heard.countDown();
             });
     try {
-      detector.start("one", 48000);
+      detector.start("echo back echo", "echo front echo");
       await(
           () ->
-              detector.getStatus() == KeywordDetector.Status.LISTENING
-                  || detector.getStatus() == KeywordDetector.Status.ERROR);
-      assertEquals(KeywordDetector.Status.LISTENING, detector.getStatus());
+              detector.status() == CameraCommandDetector.Status.LISTENING
+                  || detector.status() == CameraCommandDetector.Status.ERROR);
+      assertEquals(CameraCommandDetector.Status.LISTENING, detector.status());
       long start = SystemClock.elapsedRealtime();
       try (InputStream in =
           InstrumentationRegistry.getInstrumentation()
               .getContext()
               .getAssets()
-              .open("keyword-test.pcm")) {
+              .open("camera-" + face + ".pcm")) {
         byte[] buffer = new byte[1920];
         int count;
         while ((count = in.read(buffer)) != -1 && heard.getCount() > 0) {
@@ -198,14 +204,14 @@ public class OptionalDeviceTest {
               buffer[i] = (byte) value;
               buffer[i + 1] = (byte) (value >> 8);
             }
-          detector.feed(buffer, 0, count);
+          detector.feed(buffer, count);
           Thread.sleep(20);
         }
       }
-      assertTrue("Offline keyword not detected", heard.await(5, TimeUnit.SECONDS));
+      assertTrue("Offline camera command not detected", heard.await(5, TimeUnit.SECONDS));
       android.util.Log.i(
           "EchoValidation",
-          "Keyword fixture divisor="
+          "Camera command fixture divisor="
               + divisor
               + " elapsed_ms="
               + (SystemClock.elapsedRealtime() - start));
@@ -229,9 +235,54 @@ public class OptionalDeviceTest {
             return new File(super.getFilesDir(), "missing-model-fixture");
           }
         };
-    KeywordDetector detector = new KeywordDetector(absent, word -> {});
-    detector.start("one", 48000);
-    assertEquals(KeywordDetector.Status.NO_MODEL, detector.getStatus());
+    CameraCommandDetector detector = new CameraCommandDetector(absent, word -> {});
+    detector.start("echo back echo", "echo front echo");
+    assertEquals(CameraCommandDetector.Status.NO_MODEL, detector.status());
     assertFalse(detector.isRunning());
+  }
+
+  @Test
+  public void absentCameraServiceIsOptional() throws Exception {
+    Context absent =
+        new ContextWrapper(context) {
+          @Override
+          public Context getApplicationContext() {
+            return this;
+          }
+
+          @Override
+          public Object getSystemService(String name) {
+            return Context.CAMERA_SERVICE.equals(name) ? null : super.getSystemService(name);
+          }
+        };
+    java.util.concurrent.atomic.AtomicReference<String> failure =
+        new java.util.concurrent.atomic.AtomicReference<>("");
+    com.klob.echo.tools.CameraRecorder recorder =
+        new com.klob.echo.tools.CameraRecorder(
+            absent,
+            new com.klob.echo.tools.CameraRecorder.Listener() {
+              public File tracesDir() {
+                return new TraceStore(context).directory();
+              }
+
+              public void onCaptured(File file) {
+                fail("No camera must never produce a video");
+              }
+
+              public void onFailure(String reason) {
+                failure.set(reason);
+              }
+            });
+    try {
+      recorder.start();
+      assertFalse(recorder.isRunning());
+      assertFalse(recorder.hasCamera("back"));
+      assertFalse(recorder.hasCamera("front"));
+      recorder.captureNow("back");
+      assertTrue(failure.get().contains("unavailable"));
+      assertFalse(recorder.isCapturing());
+    } finally {
+      recorder.close();
+    }
   }
 }

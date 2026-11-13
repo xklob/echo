@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.4.0 // 2026-11-13
+
+- Warn before taking a microphone already reported in use; warn before screen-sharing/device-audio capture can replace another app’s session. Cancel leaves capture unchanged.
+- Show live amplitude history for the selected savable clip, fitting the available width as history grows and rolls.
+- Remove notes and surveys, including creation/import screens and clip associations, while retaining old files in storage.
+- Bundle Space Grotesk locally with its font license, use lowercase app branding, and retain the system-following light/dark controls and Paradigm green palette.
+- Replace shake capture and general keyword alerts with configurable spoken camera commands: `echo back echo` and `echo front echo`. Record video with shared microphone audio for 30 seconds by default, configurable from 5 to 600 seconds.
+- Handle front-only/no-camera devices and camera failures without interrupting audio. Disable unavailable camera buttons and never substitute the other facing camera.
+- Remove sound-triggered audio saves. Preserve recordings and context created by older versions.
+- Add detailed saved-clip waveforms with direct scrubbing, pinch/button zoom, accessible seeking and clearly marked speech regions.
+- Analyze speech locally with bundled Silero VAD. Transcribe English locally with the optional Vosk model, with word timestamps, tap-to-seek text and transcript sharing.
+- Add separate manual and automatic analysis/transcription controls. Automatic processing starts off; queued jobs survive process recreation and show cancelable progress.
+- Keep analysis, waveform and transcript data with renamed clips; remove it with deleted/rotated clips and include it in configured server backups.
+- Rewrite rolling-history, recent-save, session-save, interval and retention controls to distinguish temporary audio from saved Library clips.
+
 ## 2.3.0 // 2026-11-12
 
 - Make audio clips the primary Library entries, with duration, source, GPS coordinates and related-note/capture previews.

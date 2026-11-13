@@ -13,7 +13,7 @@ public final class ListeningTileService extends TileService {
   public void onStartListening() {
     Tile tile = getQsTile();
     if (tile == null) return;
-    tile.setLabel("Echo");
+    tile.setLabel(getString(com.klob.echo.R.string.app_name));
     tile.setState(RecordingService.sessionActive ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
     tile.updateTile();
   }

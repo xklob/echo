@@ -1,4 +1,4 @@
-Echo // GPL-3.0
+echo // GPL-3.0
 Fork of Michal Rogalski, mafik/echo. Original source history and license retained.
 Adapted work: Artur Linnik (Toldya), shkarlsson/good-echo, spidey000/saidIT, mikenrafter/echo, ElliotBadinger/echo and copa-sh/echo. Exact revisions and modifications: https://github.com/xklob/echo/blob/master/docs/integration-ledger.md
 
@@ -6,7 +6,9 @@ Concentus 1.0.2 // BSD-3-Clause
 VorbisJava 0.8, AndroidX, Material Components, Vosk Android 0.3.75 // Apache-2.0
 JNA 5.18.1 // used under Apache-2.0
 Optional downloaded vosk-model-small-en-us-0.15 // Apache-2.0, Alpha Cephei. https://alphacephei.com/vosk/models
-No speech model is bundled.
+The English transcription model is downloaded separately.
+Silero VAD 6.2.3 speech detector and ONNX weights // MIT
+ONNX Runtime Android 1.31.1 // MIT; dependency notices in ONNX-ThirdPartyNotices.txt.
 
 MapLibre Native Android OpenGL 13.7.1 // BSD-2-Clause
 Map rendering is based in part on the work of the FreeType Team (https://freetype.org/).
@@ -1383,3 +1385,5 @@ Vosk.txt
       of your accepting any such warranty or additional liability.
 
    END OF TERMS AND CONDITIONS
+
+Space Grotesk typeface: SIL Open Font License 1.1; see Space-Grotesk-OFL.txt.

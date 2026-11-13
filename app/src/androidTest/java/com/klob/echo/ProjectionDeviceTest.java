@@ -69,10 +69,25 @@ public class ProjectionDeviceTest {
     if (!entireScreen && Build.VERSION.SDK_INT >= 34) {
       SystemClock.sleep(800);
       UiObject2 app =
-          device.wait(Until.findObject(By.pkg("com.android.systemui").text("Echo")), 8000);
+          device.wait(Until.findObject(By.pkg("com.android.systemui").text("echo")), 8000);
       if (app == null)
-        app = device.wait(Until.findObject(By.pkg("com.android.systemui").desc("Echo")), 2000);
-      assertNotNull("Choose Echo in Android's app-sharing picker", app);
+        app = device.wait(Until.findObject(By.pkg("com.android.systemui").desc("echo")), 2000);
+      assertNotNull("Choose echo in Android's app-sharing picker", app);
+      while (!app.isClickable() && app.getParent() != null) app = app.getParent();
+      // The picker can expose an app label while its row is still clipped by the bottom
+      // edge. Bring that row fully into view before touching it, including compact displays.
+      if (app.getVisibleBounds().bottom > device.getDisplayHeight() * 7 / 8) {
+        device.swipe(
+            device.getDisplayWidth() / 2,
+            device.getDisplayHeight() * 4 / 5,
+            device.getDisplayWidth() / 2,
+            device.getDisplayHeight() * 2 / 5,
+            25);
+        SystemClock.sleep(500);
+        app = device.wait(Until.findObject(By.pkg("com.android.systemui").text("echo")), 3000);
+        assertNotNull("App row remains available after scrolling", app);
+        while (!app.isClickable() && app.getParent() != null) app = app.getParent();
+      }
       app.click();
       SystemClock.sleep(600);
       device.dumpWindowHierarchy(
@@ -129,6 +144,11 @@ public class ProjectionDeviceTest {
           Thread.sleep(300);
           int before = new TraceStore(context).list().size();
           device.wait(Until.findObject(By.text("ENABLE SCREENSHOTS")), 5000).click();
+          device.wait(Until.findObject(By.text(Pattern.compile("(?i)cancel"))), 5000).click();
+          assertFalse(service[0].tools.screen.isRunning());
+          assertTrue(service[0].isCapturing());
+          device.wait(Until.findObject(By.text("ENABLE SCREENSHOTS")), 5000).click();
+          device.wait(Until.findObject(By.text("CONTINUE")), 5000).click();
           approve(device, false);
           await(() -> service[0].tools.screen.isRunning());
           Thread.sleep(500);

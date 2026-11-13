@@ -17,6 +17,7 @@ final class AudioPlayback extends LinearLayout {
   private final TextView time, status;
   private final MaterialButton play;
   private final Slider seek;
+  private final ClipWaveformView waveform;
   private boolean prepared, touching, autoplay;
   private int position;
   private final Handler handler = new Handler(Looper.getMainLooper());
@@ -33,6 +34,17 @@ final class AudioPlayback extends LinearLayout {
     }
     time = Ui.text(this, "0:00 / 0:00", 22, false);
     status = Ui.text(this, R.string.playback_loading, 14, true);
+    waveform = new ClipWaveformView(context);
+    waveform.setSeekListener(this::seekTo);
+    addView(waveform);
+    Ui.text(this, R.string.waveform_help, 13, true);
+    LinearLayout zoom = new LinearLayout(context);
+    zoom.setOrientation(HORIZONTAL);
+    addView(zoom);
+    Ui.button(zoom, R.string.zoom_out, false, () -> waveform.zoom(2));
+    Ui.button(zoom, R.string.zoom_in, false, () -> waveform.zoom(.5));
+    for (int i = 0; i < zoom.getChildCount(); i++)
+      zoom.getChildAt(i).setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
     seek = new Slider(context);
     seek.setId(R.id.playback_seek);
     seek.setValueFrom(0);
@@ -72,6 +84,7 @@ final class AudioPlayback extends LinearLayout {
             if (p != player) return;
             prepared = true;
             seek.setValueTo(Math.max(1, p.getDuration()));
+            waveform.duration(p.getDuration());
             seek.setEnabled(true);
             p.seekTo(Math.min(position, p.getDuration()));
             play.setEnabled(true);
@@ -156,6 +169,17 @@ final class AudioPlayback extends LinearLayout {
     else resume();
   }
 
+  void analysis(com.klob.echo.speech.ClipAnalysis.Waveform data, java.util.List<long[]> speech) {
+    waveform.data(data, speech);
+  }
+
+  void seekTo(long value) {
+    position = (int) Math.max(0, Math.min(Integer.MAX_VALUE, value));
+    waveform.position(position);
+    if (player != null && prepared)
+      player.seekTo(Math.min(position, player.getDuration()), MediaPlayer.SEEK_CLOSEST);
+  }
+
   private final Runnable tick =
       new Runnable() {
         public void run() {
@@ -163,7 +187,8 @@ final class AudioPlayback extends LinearLayout {
           int current = player.getCurrentPosition(), duration = player.getDuration();
           Ui.setText(time, LibraryText.duration(current) + " / " + LibraryText.duration(duration));
           if (!touching) seek.setValue(Math.min(seek.getValueTo(), current));
-          handler.postDelayed(this, 500);
+          waveform.position(current);
+          handler.postDelayed(this, 100);
         }
       };
 

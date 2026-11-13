@@ -49,7 +49,7 @@ public final class RecordingRepository {
         entry = new CachedTrace(file);
         cache.put(key, entry);
       }
-      items.add(entry.item);
+      if (!entry.item.type.equals("file")) items.add(entry.item);
     }
     cache.keySet().retainAll(present);
     items.sort(Comparator.comparingLong((TraceItem t) -> t.time).reversed());

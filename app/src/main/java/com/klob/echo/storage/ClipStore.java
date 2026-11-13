@@ -29,7 +29,7 @@ public final class ClipStore {
     if (!folder.isDirectory() && !folder.mkdirs())
       throw new IOException("Cannot create recordings folder");
     String name =
-        "Echo-"
+        "echo-"
             + new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss.SSS", Locale.ROOT)
                 .format(new Date(startMs));
     return File.createTempFile(name + "-", "." + extension + ".part", folder);
@@ -68,15 +68,21 @@ public final class ClipStore {
     for (int i = Math.max(0, Math.max(1, keep) - (protect != null && protect.exists() ? 1 : 0));
         i < files.length;
         i++) {
-      if (!files[i].delete()) throw new IOException("Cannot enforce automatic clip retention");
-      new File(files[i].getPath() + ".json").delete();
+      synchronized (com.klob.echo.speech.ClipAnalysis.FILE_LOCK) {
+        if (!files[i].delete()) throw new IOException("Cannot enforce automatic clip retention");
+        new File(files[i].getPath() + ".json").delete();
+        for (String suffix : com.klob.echo.speech.ClipAnalysis.SUFFIXES)
+          com.klob.echo.speech.ClipAnalysis.file(files[i], suffix).delete();
+      }
     }
   }
 
   public void cleanPartials() {
     for (String kind : new String[] {"manual", "auto", "continuous", "activity"}) {
       File[] files = new File(root, kind).listFiles((d, n) -> n.endsWith(".part"));
-      if (files != null) for (File f : files) f.delete();
+      synchronized (com.klob.echo.speech.ClipAnalysis.FILE_LOCK) {
+        if (files != null) for (File f : files) f.delete();
+      }
     }
   }
 
@@ -164,6 +170,7 @@ public final class ClipStore {
     if (n.endsWith(".gpx")) return "application/gpx+xml";
     if (n.endsWith(".txt")) return "text/plain";
     if (n.endsWith(".json")) return "application/json";
+    if (n.endsWith(".wave")) return "application/octet-stream";
     return n.endsWith(".opus")
         ? "audio/ogg"
         : n.endsWith(".flac") ? "audio/flac" : n.endsWith(".m4a") ? "audio/mp4" : "audio/wav";

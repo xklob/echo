@@ -52,7 +52,7 @@ final class LibraryText {
   }
 
   static boolean generated(String name) {
-    return name.startsWith("Echo-20") || name.matches("20\\d\\d-.*");
+    return name.startsWith("Echo-20") || name.startsWith("echo-20") || name.matches("20\\d\\d-.*");
   }
 
   static String title(Context c, RecordingInfo recording) {
@@ -68,16 +68,12 @@ final class LibraryText {
                 ? R.string.video_name
                 : type.equals("location")
                     ? R.string.location_name
-                    : type.equals("survey")
-                        ? R.string.survey_name
-                        : type.equals("keyword") ? R.string.keyword_event : R.string.note_name);
+                    : type.equals("keyword") ? R.string.keyword_event : R.string.saved_file);
   }
 
   static String traceTitle(Context c, TraceItem trace) {
     String base = base(trace.file);
     if (!generated(base)) return base;
-    if (trace.type.equals("note") && !trace.preview.isEmpty())
-      return trace.preview.split("\\R", 2)[0];
     return traceLabel(c, trace.type);
   }
 

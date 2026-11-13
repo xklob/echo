@@ -46,11 +46,6 @@ public final class ToolsFragment extends ServiceFragment {
             });
     location.setId(R.id.location_enabled);
     locationState = Ui.text(card, "", 14, true);
-    Ui.row(
-        body,
-        R.string.keywords,
-        R.string.keywords_help,
-        () -> open("tool_keywords", R.string.keywords));
     Ui.row(body, R.string.camera, R.string.camera_help, () -> open("tool_camera", R.string.camera));
     Ui.row(body, R.string.screen, R.string.screen_help, () -> open("tool_screen", R.string.screen));
     Ui.row(
@@ -58,18 +53,11 @@ public final class ToolsFragment extends ServiceFragment {
         R.string.audio_source,
         R.string.audio_source_help,
         () -> open("tool_source", R.string.audio_source));
-    Ui.heading(body, R.string.notes_surveys);
     Ui.row(
         body,
         R.string.saved_extras,
         R.string.saved_extras_help,
         () -> open("extras", R.string.saved_extras));
-    Ui.row(
-        body,
-        R.string.new_note,
-        R.string.new_note_help,
-        () -> open("tool_note", R.string.new_note));
-    Ui.row(body, R.string.survey, R.string.survey_help, () -> open("tool_survey", R.string.survey));
     Ui.row(body, R.string.backup, R.string.backup_help, () -> open("tool_sync", R.string.backup));
     return root;
   }

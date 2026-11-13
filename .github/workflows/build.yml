@@ -23,7 +23,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ffmpeg
-      - run: ./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+      - run: ./gradlew testDebugUnitTest lintDebug lintRelease assembleDebug assembleDebugAndroidTest assembleRelease
+      - name: Verify minified native bindings
+        run: python3 tools/verify_native_bindings.py app/build/outputs/apk/release/*.apk
       - uses: actions/upload-artifact@v4
         with:
           name: echo-debug

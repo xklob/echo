@@ -4,7 +4,7 @@ Enable **Allow external controls** in Settings → External controls. It default
 
 | Action suffix | Extras | Behavior |
 | --- | --- | --- |
-| START | None | Request listening; Android may require opening Echo first. |
+| START | None | Request listening; Android may require opening echo first. |
 | STOP | None | Persist disabled state, stop capture/tools and finish pending saves. |
 | SAVE | `seconds` as a long, 1–86400; default 60 | Save available lookback. Reject invalid values. Requires an active session/history. |
 | CONTINUOUS_START | None | Rotate saved segments using the configured interval/retention. |

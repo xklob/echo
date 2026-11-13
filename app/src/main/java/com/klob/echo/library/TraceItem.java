@@ -21,11 +21,7 @@ public final class TraceItem {
             ? "location"
             : name.endsWith(".jpg")
                 ? "image"
-                : name.endsWith(".mp4")
-                    ? "video"
-                    : name.endsWith(".json")
-                        ? "survey"
-                        : name.contains("_keyword-") ? "keyword" : "note";
+                : name.endsWith(".mp4") ? "video" : name.contains("_keyword-") ? "keyword" : "file";
     long length = name.endsWith(".mp4") ? mediaDuration(file) : 0;
     long timestamp = utcTimestamp(name);
     if (timestamp <= 0) timestamp = Math.max(1, file.lastModified() - length);
@@ -36,7 +32,7 @@ public final class TraceItem {
       timestamp = meta.optLong("time_ms", timestamp);
       length = meta.optLong("duration_ms", length);
       String savedKind = meta.optString("type", kind);
-      if (java.util.Arrays.asList("location", "image", "video", "survey", "keyword", "note")
+      if (java.util.Arrays.asList("location", "image", "video", "keyword", "file")
           .contains(savedKind)) kind = savedKind;
     } catch (Exception ignored) {
     }
@@ -44,7 +40,7 @@ public final class TraceItem {
     time = timestamp;
     duration = Math.max(0, length);
     String snippet = "";
-    if (kind.equals("note") || kind.equals("keyword")) {
+    if (kind.equals("keyword")) {
       try (InputStream in = new FileInputStream(file)) {
         byte[] bytes = new byte[512];
         int count = in.read(bytes);

@@ -11,7 +11,7 @@ import androidx.fragment.app.DialogFragment;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
 import com.klob.echo.R;
-import com.klob.echo.recording.CaptureTools;
+import com.klob.echo.core.CameraCommand;
 import com.klob.echo.settings.AppSettings;
 
 /** A retained dialog description with explicit validation and no global Apply form. */
@@ -59,10 +59,15 @@ public final class PreferenceDialog extends DialogFragment {
     return d;
   }
 
-  public static PreferenceDialog keywords() {
+  public static PreferenceDialog phrase(boolean front) {
     PreferenceDialog d =
-        create("keywords", R.string.keyword_words, R.string.keyword_words_help, false);
-    d.requireArguments().putString("type", "words");
+        create(
+            front ? "camera_front_phrase" : "camera_back_phrase",
+            front ? R.string.camera_front_phrase : R.string.camera_back_phrase,
+            R.string.camera_phrase_help,
+            false);
+    d.requireArguments().putString("type", "phrase");
+    d.requireArguments().putString("fallback", front ? CameraCommand.FRONT : CameraCommand.BACK);
     return d;
   }
 
@@ -117,7 +122,7 @@ public final class PreferenceDialog extends DialogFragment {
               ? state.getString("input", "")
               : type.equals("number")
                   ? Integer.toString(p.getInt(key, a.getInt("default")))
-                  : p.getString(key, "");
+                  : p.getString(key, a.getString("fallback", ""));
       input =
           Ui.input(
               body,
@@ -159,11 +164,27 @@ public final class PreferenceDialog extends DialogFragment {
                   return;
                 }
               } else {
-                if (!CaptureTools.validKeywords(text)) {
-                  input.setError(getString(R.string.keyword_invalid));
+                String other =
+                    a.getString("key").equals("camera_back_phrase")
+                        ? "camera_front_phrase"
+                        : "camera_back_phrase";
+                String fallback =
+                    other.equals("camera_back_phrase") ? CameraCommand.BACK : CameraCommand.FRONT;
+                if (!CameraCommand.valid(text)
+                    || CameraCommand.match(
+                            text,
+                            text,
+                            AppSettings.prefs(requireContext()).getString(other, fallback))
+                        == null
+                    || CameraCommand.match(
+                            AppSettings.prefs(requireContext()).getString(other, fallback),
+                            text,
+                            AppSettings.prefs(requireContext()).getString(other, fallback))
+                        == null) {
+                  input.setError(getString(R.string.camera_phrase_invalid));
                   return;
                 }
-                value = text;
+                value = CameraCommand.normalize(text);
               }
               save(value);
               dismiss();

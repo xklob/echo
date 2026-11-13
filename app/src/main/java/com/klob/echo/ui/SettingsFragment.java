@@ -24,9 +24,9 @@ public final class SettingsFragment extends Fragment {
         () -> open("automatic", R.string.auto_saves));
     Ui.row(
         body,
-        R.string.activity_saves,
-        R.string.activity_saves_help,
-        () -> open("activity", R.string.activity_saves));
+        R.string.speech_settings,
+        R.string.speech_settings_help,
+        () -> open("tool_speech", R.string.speech_settings));
     Ui.row(
         body,
         R.string.recording_rules,

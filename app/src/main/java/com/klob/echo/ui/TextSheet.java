@@ -10,7 +10,7 @@ import com.klob.echo.R;
 import com.klob.echo.storage.Io;
 import java.io.*;
 
-/** Small local text documents and bundled attribution, capped at 128 KiB. */
+/** Local text is capped at 128 KiB; bundled dependency notices may use up to 1 MiB. */
 public final class TextSheet extends DialogFragment {
   public static void show(FragmentManager fm, String title, String source, boolean asset) {
     TextSheet d = new TextSheet();
@@ -31,12 +31,13 @@ public final class TextSheet extends DialogFragment {
         b.getBoolean("asset")
             ? requireContext().getAssets().open(b.getString("source"))
             : new FileInputStream(b.getString("source"))) {
-      text = new String(Io.readBytes(in, 131072), java.nio.charset.StandardCharsets.UTF_8);
+      text =
+          new String(
+              Io.readBytes(in, b.getBoolean("asset") ? 1048576 : 131072),
+              java.nio.charset.StandardCharsets.UTF_8);
     } catch (IOException e) {
       text = getString(b.getBoolean("asset") ? R.string.license_failed : R.string.text_read_failed);
     }
-    if (!b.getBoolean("asset") && b.getString("source").endsWith(".json"))
-      text = com.klob.echo.tools.Survey.readable(text);
     LinearLayout body = Ui.column(requireContext());
     int pad = Ui.dp(requireContext(), 24);
     body.setPadding(pad, 0, pad, 0);

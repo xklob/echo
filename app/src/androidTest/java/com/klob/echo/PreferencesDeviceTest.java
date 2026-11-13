@@ -13,7 +13,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.google.android.material.textfield.TextInputLayout;
 import com.klob.echo.recording.RecordingService;
-import com.klob.echo.tools.KeywordDetector;
+import com.klob.echo.tools.CameraCommandDetector;
 import com.klob.echo.ui.DetailActivity;
 import com.klob.echo.ui.MainActivity;
 import java.io.*;
@@ -35,7 +35,7 @@ public class PreferencesDeviceTest {
   public void setup() throws Exception {
     context = InstrumentationRegistry.getInstrumentation().getTargetContext();
     for (String name :
-        new String[] {"RECORD_AUDIO", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"})
+        new String[] {"RECORD_AUDIO", "CAMERA", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"})
       try (ParcelFileDescriptor p =
               InstrumentationRegistry.getInstrumentation()
                   .getUiAutomation()
@@ -120,7 +120,7 @@ public class PreferencesDeviceTest {
   }
 
   private AlertDialog memoryDialog(DetailActivity a) {
-    ((View) text(a, "Memory budget").getParent().getParent()).performClick();
+    ((View) text(a, a.getString(R.string.memory_budget)).getParent().getParent()).performClick();
     a.getSupportFragmentManager().executePendingTransactions();
     return (AlertDialog)
         ((DialogFragment) a.getSupportFragmentManager().findFragmentByTag("value")).requireDialog();
@@ -209,36 +209,36 @@ public class PreferencesDeviceTest {
           activity.onActivity(
               a -> {
                 s.tools.setEnabled("gps", true, "");
-                s.tools.setEnabled("keywords", true, "one");
+                s.tools.setEnabled("camera", true, "");
               });
           assertTrue(s.tools.wanted("gps"));
-          assertTrue(s.tools.wanted("keywords"));
+          assertTrue(s.tools.wanted("camera"));
           assertFalse(s.tools.gps);
           activity.onActivity(
               a ->
                   a.startForegroundService(
                       new Intent(a, RecordingService.class)
                           .setAction(RecordingService.ACTION_START)));
-          await(() -> s.tools.gps && s.tools.keywords.getStatus() != KeywordDetector.Status.OFF);
+          await(() -> s.tools.gps && s.tools.commands.status() != CameraCommandDetector.Status.OFF);
           s.stopListening();
           await(() -> !s.tools.gps && s.captureState.equals("Stopped"));
           assertTrue(s.tools.wanted("gps"));
-          assertTrue(s.tools.wanted("keywords"));
+          assertTrue(s.tools.wanted("camera"));
         });
     Thread.sleep(300);
     service(
         (activity, s) -> {
           assertTrue(s.tools.wanted("gps"));
-          assertTrue(s.tools.wanted("keywords"));
+          assertTrue(s.tools.wanted("camera"));
           assertEquals(
-              "one",
-              context.getSharedPreferences(RecordingService.PREFS, 0).getString("keywords", ""));
+              30,
+              context.getSharedPreferences(RecordingService.PREFS, 0).getInt("camera_seconds", 30));
           activity.onActivity(
               a ->
                   a.startForegroundService(
                       new Intent(a, RecordingService.class)
                           .setAction(RecordingService.ACTION_START)));
-          await(() -> s.tools.gps && s.tools.keywords.getStatus() != KeywordDetector.Status.OFF);
+          await(() -> s.tools.gps && s.tools.commands.status() != CameraCommandDetector.Status.OFF);
           activity.onActivity(a -> s.tools.setEnabled("gps", false, ""));
           assertFalse(s.tools.wanted("gps"));
           assertFalse(s.tools.gps);

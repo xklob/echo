@@ -6,14 +6,12 @@
     <item name="record_available" type="id" />
     <item name="history_pending" type="id" />
     <item name="setting_disk" type="id" />
-    <item name="keyword_enabled" type="id" />
     <item name="location_enabled" type="id" />
     <item name="camera_enabled" type="id" />
     <item name="input_value" type="id" />
     <item name="input_container" type="id" />
     <item name="library_list" type="id" />
     <item name="theme_choice" type="id" />
-    <item name="note_text" type="id" />
     <item name="clip_progress" type="id" />
     <item name="playback_seek" type="id" />
     <item name="record_custom_chip" type="id" />
@@ -22,4 +20,11 @@
     <item name="clip_context" type="id" />
     <item name="clip_location_status" type="id" />
     <item name="clip_play_pause" type="id" />
+    <item name="clip_waveform" type="id" />
+    <item name="analyze_speech" type="id" />
+    <item name="transcribe_clip" type="id" />
+    <item name="clip_transcript" type="id" />
+    <item name="auto_analyze_speech" type="id" />
+    <item name="auto_transcribe" type="id" />
+    <item name="live_waveform" type="id" />
 </resources>

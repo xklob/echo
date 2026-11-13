@@ -46,12 +46,13 @@ public final class SettingsDetailFragment extends ServiceFragment {
     View root = Ui.scroll(requireContext(), body);
     String page = requireArguments().getString("page", "history");
     values.clear();
-    if (page.equals("history") || page.equals("activity")) {
+    if (page.equals("history")) {
       pending = Ui.text(body, R.string.pending_settings, 14, true);
       pending.setId(R.id.history_pending);
     }
     switch (page) {
       case "history":
+        Ui.text(body, R.string.rolling_history_explanation, 16, true);
         Ui.text(body, getString(R.string.memory_help, RecordingService.maxRamMb()), 14, true);
         number(
             "ram_mb",
@@ -109,6 +110,7 @@ public final class SettingsDetailFragment extends ServiceFragment {
             false);
         break;
       case "automatic":
+        Ui.text(body, R.string.rolling_save_explanation, 16, true);
         toggle("autosave", R.string.autosave_enable, R.string.autosave_help, false);
         toggle("autosave_fill", R.string.autosave_fill, R.string.autosave_fill_help, false);
         number(
@@ -122,20 +124,6 @@ public final class SettingsDetailFragment extends ServiceFragment {
             R.string.seconds_value);
         number("auto_keep", R.string.retention, R.string.retention_help, 48, 1, 500, false, 0);
         Ui.text(body, R.string.retention_help, 14, true);
-        break;
-      case "activity":
-        toggle("activity", R.string.activity_enable, R.string.activity_help, true);
-        number(
-            "activity_db",
-            R.string.threshold,
-            R.string.threshold_help,
-            -40,
-            -60,
-            -10,
-            true,
-            R.string.db_value);
-        number("activity_pre", R.string.pre_roll, 0, 2, 0, 15, true, R.string.seconds_value);
-        number("activity_post", R.string.post_roll, 0, 2, 1, 30, true, R.string.seconds_value);
         break;
       case "rules":
         toggle("schedule", R.string.schedule_enable, R.string.schedule_help, false);
@@ -199,7 +187,7 @@ public final class SettingsDetailFragment extends ServiceFragment {
             16,
             true);
         Ui.text(body, R.string.about_text, 16, true);
-        Ui.row(body, R.string.licenses, "GPL-3.0 · Echo and contributors", this::licenses);
+        Ui.row(body, R.string.licenses, "GPL-3.0 · echo and contributors", this::licenses);
         Ui.row(
             body,
             R.string.diagnostics,

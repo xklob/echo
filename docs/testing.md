@@ -1,8 +1,28 @@
 # Validation
 
-Date: 2026-11-12. Emulator results are not physical Pixel or battery certification.
+Updated: 2026-11-13. The versioned sections below record validation at each release; earlier feature names and measurements describe those historical builds. Emulator results are not physical Pixel or battery certification.
 
-## Build
+## 2.4.0 speech, camera commands and live history
+
+24 JVM tests pass, including bounded live amplitude-history windows, ring wraparound and resets, speech-region boundaries, waveform compaction and camera phrase matching. Debug/release lint and all APK builds pass. Notes and survey creation/import code and their obsolete test were removed; library tests now verify that old note/survey files are retained but excluded from clip context and the capture browser.
+
+A separate-UID microphone fixture checks warning-before-start, Cancel preserving the other capture, dialog recreation and explicit Continue. The interruption test also checks that echo excludes its own audio session. Projection checks cancel the replacement warning before testing native Android screen-sharing consent. These are interactive preflight checks; schedule/automation starts and another app taking over later still rely on the runtime interruption handling.
+
+The signed minified APK is 229,394,733 bytes, versionCode 21, SHA-256 `fb9abbc5b3e2fa880599dd27fa2aa7bf51d56dce96fd8d1ea9a03d29a5a62428`. Its production certificate is unchanged. APK signature, 16 KiB ZIP alignment and all five ARM64 native libraries pass verification. The small Silero model and licensed Space Grotesk font are bundled; the English transcription model remains optional. Test PCM fixtures and test-only components are absent from the release.
+
+The final Android 17 run reports `OK (35 tests)` in 139.58 seconds: 34 functional checks and the opt-in resource soak skipped. The Android 11 full run passed all but one immediate global-recording-status assertion. Its per-recorder silencing callback and global configuration snapshot arrive separately; after waiting for the snapshot, the targeted interruption/recovery check passed in 13.972 seconds. All other Android 11 checks, including the new warning/cancel/continue flow, passed in the full run. The product APK was unchanged by these test-harness corrections.
+
+The signed-build smoke test caught a JNI failure that debug tests could not expose: R8 had removed/renamed ONNX value classes such as `TensorInfo`. The release now uses ONNX Runtime’s documented keep rule. The new binary check rejects the broken candidate and verifies all 12 JNI class references against actual DEX definitions in the rebuilt APK. CI now builds and checks the minified release as well as the debug app.
+
+The production 2.3.0 upgrade preserved all 27 existing file hashes and the first-install timestamp. After adding generated speech and downloading the optional model, installing the final rebuilt APK preserved all 46 existing files. Its pending speech job resumed successfully: an 11.124-second generated clip produced three speech regions and 22 timestamped transcript words. Native word seeking, the marked waveform and a saved 12-fix GPS route were inspected in the signed app.
+
+On the front-only production emulator, the back-camera button was disabled and the default 30-second front recording produced a 29.888-second MP4 with H.264 video and 48 kHz AAC audio. Both streams decoded independently with ffmpeg, and microphone capture continued. Normal and quiet spoken-command fixtures are covered by the device tests; the signed-app camera check used its manual front-camera control.
+
+Native device-audio capture showed the replacement warning and Android consent before switching sources. Playback of the generated speech clip produced visible amplitude history in both themes. Saving that history produced a non-silent 66.249-second Opus clip marked `device_audio`; independent decoding returned exactly the metadata's 3,179,968 captured samples. README images are direct screenshots of this production build with generated content.
+
+A companion prism check on Android 16 started echo microphone recording, opened prism’s microphone connection and observed its preflight warning. Cancelling left echo recording with its accumulated history intact. System-audio/microphone coexistence and projection replacement across these two apps remain separate checks; the app-specific projection and microphone-interruption tests below do not establish every cross-app combination.
+
+## Initial integration build
 
 Untouched upstream `007fdf30250a11e8432dd6b9edeeff7497cb9aad` built before edits using JDK 17.0.21, Gradle 8.11.1, AGP 8.10.1 and SDK 34 (`bash gradlew assembleDebug`; original wrapper lacked execute permission).
 
@@ -39,7 +59,7 @@ APK Signature Scheme v2 verification and `zipalign -c -P 16 4` passed. An actual
 | Android 17 / API 37, Google APIs x86_64 emulator, Pixel 9 Pro XL profile | All 15 functional tests pass, plus actual URI-grant revocation and competing-private-microphone checks. Opt-in screen-off/resource soak runs separately below. |
 | Physical Pixel 9 Pro XL / OEM devices | Unavailable. Neither Windows nor WSL ADB lists a physical target. No physical call/Bluetooth/Doze/battery/lens validation is claimed. |
 
-The competing-private-microphone test uses a separate UID and Android privacy-sensitive AudioRecord: usable history freezes while Android silences Echo, then capture resumes with a new history and a visible gap notice. It passed on Android 11 and 17. This tests platform priority handling, not physical telephony or Bluetooth routing.
+The competing-private-microphone test uses a separate UID and Android privacy-sensitive AudioRecord: usable history freezes while Android silences echo, then capture resumes with a new history and a visible gap notice. It passed on Android 11 and 17. This tests platform priority handling, not physical telephony or Bluetooth routing.
 
 Device tests exercise platform Opus/WAV/FLAC/AAC output, collisions/invalid destination, repeated start/stop, screen-off sample advancement, continuous final tail, schedule pause/resume with denied exact alarms, manual-stop priority, automatic retention and failed-copy duplicate prevention. The test-only DocumentsProvider injects permission-style failure, ENOSPC/write failure, truncated readback and cancellation; actual Android URI grants are also revoked. Local originals survive failures. Manual files do not rotate.
 
@@ -53,7 +73,7 @@ adb -s emulator-5558 install -r app/build/outputs/apk/androidTest/debug/app-debu
 adb -s emulator-5558 shell am instrument -w com.klob.echo.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-`PerformanceDeviceTest` is skipped by default and requires the explicit duration arguments below. The optional model tests require the publisher's HTTPS download on first run. No model weights are checked in.
+`PerformanceDeviceTest` is skipped by default and requires the explicit duration arguments below. The optional model tests require the publisher's HTTPS download on first run. The optional English model is downloaded at runtime. Starting in 2.4.0, the offline Silero speech detector is bundled with its license.
 
 ## Independent media checks
 
@@ -75,7 +95,7 @@ The opt-in test runs real foreground capture with screen off, a 1 MiB history bu
 ```sh
 adb -s emulator-5556 shell am instrument -w \
   -e class com.klob.echo.PerformanceDeviceTest \
-  -e soak_seconds 360 -e keyword_seconds 120 \
+  -e soak_seconds 360 -e command_seconds 120 \
   com.klob.echo.test/androidx.test.runner.AndroidJUnitRunner
 adb -s emulator-5556 logcat -d -s EchoSoak:I EchoValidation:I '*:S'
 ```
@@ -96,7 +116,7 @@ Fixture keyword latency was approximately 1.1 seconds from fixture start for bot
 
 ## Executable physical-device checklist
 
-Use the distinct development application ID. Preserve/share any desired recordings before uninstalling or changing signing keys. Keep passwords/server tokens in native fields.
+Use a disposable emulator or test device for instrumentation: it changes echo preferences and generated files. Debug and production builds share the application ID but have different signing keys. Preserve/share any desired recordings before uninstalling or changing signing keys. Keep passwords/server tokens in native fields.
 
 - Install with `adb -s SERIAL install -r APK`; cold launch, deny then grant mic/notifications independently, start/stop/resume recording, custom lookback, save/play/seek/share/rename/delete. Check System/Light/Dark, larger text, rotation and wider-window navigation. Confirm notifications and OS microphone indicator match state.
 - Run screen-off capture for at least an hour with wraparound, autosave and disk mode; inspect actual history, memory, storage and output decodes. Repeat with battery saver and `adb -s SERIAL shell dumpsys deviceidle force-idle`, then `... unforce`. Measure physical battery drain with and without each optional tool.
@@ -104,9 +124,9 @@ Use the distinct development application ID. Preserve/share any desired recordin
 - Kill/recreate the app process, then reboot while enabled and while manually stopped/scheduled off. Confirm no phantom capture or unsupported boot mic startup; resume notification/visible action behaves as documented.
 - Test overnight schedule and timezone changes; repeat with exact-alarm access denied. Manual STOP must remain stopped. Evaluate local DST transitions against `ListeningRulesTest` fixtures.
 - Select a real DocumentsProvider folder; restart app, revoke its grant, fill destination and cancel a long export. Local file must survive; incomplete external output must not be reported as saved. Verify SHA-256 on successful copies. Check slow-provider behavior while capture advances.
-- Enable GPS, shake camera and screenshots separately, grant/deny permissions and stop each. Walk, knock, shake/settle, trigger haptics and test front/rear availability where exposed. Inspect five-second silent MP4, widest rear framing and microphone continuity. Confirm STOP releases sensors/projection/location. Test protected-screen capture rejection.
+- Enable GPS, spoken camera commands and screenshots separately, grant/deny permissions and stop each. Test both spoken phrases, front-only devices, disabled/busy/broken cameras and no camera service. Inspect 30-second default MP4 video with audio, framing, audio/video synchronization and microphone continuity. Missing cameras must never substitute the other lens or stop audio. Confirm STOP releases camera/projection/location. Test protected-screen capture rejection.
 - Test device audio with an allowed app, prohibited app and stopped projection. Source metadata must be accurate and there must be no hidden mic fallback. Simultaneous mic/device mixing is not available.
-- Test missing model/offline installed model, quiet speech and non-speech, notification denial and model-load failure. Inspect CPU/PSS/battery. Notes/survey imports should handle malformed/large input without disturbing capture.
+- Test missing model/offline installed model, quiet speech and non-speech, notification denial and model-load failure. Analyze and transcribe saved clips, scrub/zoom their waveforms and tap transcript words; verify automatic options, cancellation, long clips, rename/delete, process recreation and simultaneous recording. Inspect CPU/PSS/battery.
 - Configure your optional HTTPS receiver and enter token natively. Test unavailable network, wrong token, invalid ack, retry, repeated sync and `restore.py`; compare restored hashes. Originals must remain local. No deletion, secret in URL/log or success before durable ack.
 - Add Quick Settings tile and use documented v1 automation after explicit opt-in. Test excessive/invalid values and Android background-start rejection/resume path.
 
@@ -118,7 +138,7 @@ The production APK is `echo-2.1.0.apk`, versionCode 17, using a dedicated RSA-40
 
 APK SHA-256: `fa430c96542216a065151dbe5a190f28727cd5679ca0666120df887cc16dba9e`. APK signature and 16 KiB ZIP alignment checks pass. The normal production build was rebuilt after the isolated upgrade fixture, and matched the prepared release APK byte for byte. Debug/release lint, 16 JVM tests and both build variants passed.
 
-A disposable Android 17 emulator runs a lower-version verification fixture signed with this same production key. It uses the minified release implementation with test-only version metadata; it is not a historical public release. Native LISTEN/SAVE/STOP recorded a completed 53,968-byte Opus clip, independently decoded by ffmpeg (48 kHz mono, approximately 9.92 s). This generated recording is retained for the real Klobstore update-to-code-17 preservation check. No user's existing app or recordings are removed.
+A disposable Android 17 emulator runs a lower-version verification fixture signed with this same production key. It uses the minified release implementation with test-only version metadata; it is not a historical public release. Native LISTEN/SAVE/STOP recorded a completed 53,968-byte Opus clip, independently decoded by ffmpeg (48 kHz mono, approximately 9.92 s). This generated recording is retained for the real klobstore update-to-code-17 preservation check. No user's existing app or recordings are removed.
 
 The production certificate differs from the earlier debug review APK. Android correctly disallows replacing that debug installation in place; users must export wanted data before switching certificates. Future production releases preserve the production key. Physical Pixel validation remains outstanding.
 

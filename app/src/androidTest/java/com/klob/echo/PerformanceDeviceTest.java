@@ -8,7 +8,7 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.klob.echo.recording.RecordingService;
-import com.klob.echo.tools.KeywordDetector;
+import com.klob.echo.tools.CameraCommandDetector;
 import com.klob.echo.tools.ModelInstaller;
 import com.klob.echo.ui.MainActivity;
 import java.io.*;
@@ -68,19 +68,20 @@ public class PerformanceDeviceTest {
           assertTrue(
               "Expected oldest RAM history to rotate",
               s[0].availableSamples < s[0].endSample - 480000);
-        int keywordSeconds =
+        int commandSeconds =
             Integer.parseInt(
-                InstrumentationRegistry.getArguments().getString("keyword_seconds", "0"));
-        if (keywordSeconds > 0 && keywordSeconds <= 300) {
+                InstrumentationRegistry.getArguments().getString("command_seconds", "0"));
+        if (commandSeconds > 0 && commandSeconds <= 300) {
           ModelInstaller.install(c);
-          s[0].tools.keywords(true, "one");
-          long keywordStart = SystemClock.elapsedRealtime();
+          s[0].tools.commands.start("echo back echo", "echo front echo");
+          long commandStart = SystemClock.elapsedRealtime();
           cpu = android.os.Process.getElapsedCpuTime();
-          for (int i = 0; i <= keywordSeconds; i++) {
-            if (i % 30 == 0 || i == keywordSeconds) log(s[0], "keywords", i, keywordStart, cpu);
-            if (i < keywordSeconds) Thread.sleep(1000);
+          for (int i = 0; i <= commandSeconds; i++) {
+            if (i % 30 == 0 || i == commandSeconds)
+              log(s[0], "camera commands", i, commandStart, cpu);
+            if (i < commandSeconds) Thread.sleep(1000);
           }
-          assertEquals(KeywordDetector.Status.LISTENING, s[0].tools.keywords.getStatus());
+          assertEquals(CameraCommandDetector.Status.LISTENING, s[0].tools.commands.status());
         }
       } finally {
         s[0].stopListening();

@@ -14,12 +14,13 @@ import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
 import com.klob.echo.R;
+import com.klob.echo.recording.CaptureConflicts;
 import com.klob.echo.recording.RecordingService;
 import com.klob.echo.settings.AppSettings;
 
 public final class RecordFragment extends ServiceFragment {
   private TextView state, available, selection, estimate, notice, source;
-  private WaveformView waveform;
+  private LiveWaveformView waveform;
   private MaterialButton start, save, cancel;
   private MaterialSwitch continuous;
   private LinearProgressIndicator progress;
@@ -38,6 +39,18 @@ public final class RecordFragment extends ServiceFragment {
       registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {});
 
   @Override
+  public void onCreate(Bundle state) {
+    super.onCreate(state);
+    getParentFragmentManager()
+        .setFragmentResultListener(
+            "confirmed",
+            this,
+            (key, result) -> {
+              if (result.getString("action", "").equals("start_microphone")) beginRecording();
+            });
+  }
+
+  @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle saved) {
     LinearLayout body = Ui.column(requireContext());
     View root = Ui.scroll(requireContext(), body);
@@ -45,16 +58,15 @@ public final class RecordFragment extends ServiceFragment {
     source = Ui.text(recorder, R.string.source_mic, 14, true);
     state = Ui.text(recorder, R.string.ready, 22, false);
     state.setId(R.id.record_state);
-    waveform = new WaveformView(requireContext());
-    waveform.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-    LinearLayout.LayoutParams wave = new LinearLayout.LayoutParams(-1, Ui.dp(requireContext(), 64));
+    waveform = new LiveWaveformView(requireContext());
+    LinearLayout.LayoutParams wave =
+        new LinearLayout.LayoutParams(-1, Ui.dp(requireContext(), 112));
     wave.topMargin = Ui.dp(requireContext(), 12);
     wave.bottomMargin = Ui.dp(requireContext(), 20);
     recorder.addView(waveform, wave);
+    Ui.text(recorder, R.string.live_waveform_help, 13, true);
     available = Ui.text(recorder, "0:00", 44, false);
     available.setId(R.id.record_available);
-    available.setTypeface(
-        android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL));
     Ui.text(recorder, R.string.history_ready, 14, true);
     start =
         Ui.button(
@@ -196,6 +208,22 @@ public final class RecordFragment extends ServiceFragment {
       mic.launch(Manifest.permission.RECORD_AUDIO);
       return;
     }
+    String warning =
+        CaptureConflicts.read(requireContext(), service == null ? 0 : service.audioSessionId)
+            .microphoneWarning(requireContext());
+    if (!warning.isEmpty()) {
+      ConfirmDialog.show(
+          getParentFragmentManager(),
+          R.string.capture_conflict_title,
+          warning,
+          R.string.continue_capture,
+          "start_microphone");
+      return;
+    }
+    beginRecording();
+  }
+
+  private void beginRecording() {
     try {
       requireContext()
           .startForegroundService(
@@ -245,8 +273,6 @@ public final class RecordFragment extends ServiceFragment {
     Ui.setText(
         source, getString(s.isPlaybackCapture() ? R.string.source_device : R.string.source_mic));
     Ui.setText(available, Ui.duration(s.availableSamples));
-    waveform.setAmplitudes(s.amplitudes);
-    waveform.setActive(s.isCapturing());
     Ui.setText(
         start,
         getString(
@@ -255,6 +281,8 @@ public final class RecordFragment extends ServiceFragment {
                 : s.isEnabled() ? R.string.record_resume : R.string.record_start));
     int chosen = AppSettings.lookbackSeconds(requireContext());
     long samples = Math.min(chosen * 48000L, s.availableSamples);
+    long end = s.endSample;
+    waveform.history(s.amplitudeHistory.snapshot(Math.max(0, end - samples), end, waveform.bars()));
     Ui.setText(
         selection,
         samples == 0
@@ -295,11 +323,5 @@ public final class RecordFragment extends ServiceFragment {
             .show();
       else message(s.message);
     }
-  }
-
-  @Override
-  public void onStop() {
-    if (waveform != null) waveform.setActive(false);
-    super.onStop();
   }
 }

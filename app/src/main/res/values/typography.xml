@@ -1,0 +1,77 @@
+<resources>
+    <style name="TextAppearance.Echo.DisplayLarge" parent="TextAppearance.Material3.DisplayLarge">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">400</item>
+    </style>
+    <style name="TextAppearance.Echo.DisplayMedium" parent="TextAppearance.Material3.DisplayMedium">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">400</item>
+    </style>
+    <style name="TextAppearance.Echo.DisplaySmall" parent="TextAppearance.Material3.DisplaySmall">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">400</item>
+    </style>
+    <style name="TextAppearance.Echo.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">400</item>
+    </style>
+    <style name="TextAppearance.Echo.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">400</item>
+    </style>
+    <style name="TextAppearance.Echo.HeadlineSmall" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">400</item>
+    </style>
+    <style name="TextAppearance.Echo.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">400</item>
+    </style>
+    <style name="TextAppearance.Echo.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">500</item>
+    </style>
+    <style name="TextAppearance.Echo.TitleSmall" parent="TextAppearance.Material3.TitleSmall">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">500</item>
+    </style>
+    <style name="TextAppearance.Echo.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">400</item>
+    </style>
+    <style name="TextAppearance.Echo.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">400</item>
+    </style>
+    <style name="TextAppearance.Echo.BodySmall" parent="TextAppearance.Material3.BodySmall">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">400</item>
+    </style>
+    <style name="TextAppearance.Echo.LabelLarge" parent="TextAppearance.Material3.LabelLarge">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">500</item>
+    </style>
+    <style name="TextAppearance.Echo.LabelMedium" parent="TextAppearance.Material3.LabelMedium">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">500</item>
+    </style>
+    <style name="TextAppearance.Echo.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="android:textFontWeight">500</item>
+    </style>
+</resources>

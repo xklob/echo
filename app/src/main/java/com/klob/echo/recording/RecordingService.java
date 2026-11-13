@@ -45,8 +45,6 @@ public final class RecordingService extends Service {
   private final short[] pcm = new short[2400];
   private ClipStore clips;
   public CaptureTools tools;
-  private ActivityDetector activityDetector;
-  private boolean activityEnabled;
   private volatile int optionalTypes;
   private volatile android.media.projection.MediaProjection playbackProjection;
   private String historySource = "microphone";
@@ -73,10 +71,10 @@ public final class RecordingService extends Service {
   public volatile String captureState = "Stopped", message = "", saveState = "";
   public volatile long availableSamples, memoryBytes, diskBytes, endSample, startMs;
   public volatile int progress;
+  public volatile int audioSessionId;
   public volatile boolean continuous;
-  public volatile float[] amplitudes = new float[32];
-  private final float[] waveform = new float[32];
-  private int waveformIndex, tickCount;
+  public final AmplitudeHistory amplitudeHistory = new AmplitudeHistory();
+  private int tickCount;
   private PowerManager.WakeLock wakeLock;
 
   public final class LocalBinder extends Binder {
@@ -163,7 +161,7 @@ public final class RecordingService extends Service {
         foreground = true;
       }
     } catch (RuntimeException e) {
-      message = "Open Echo and tap Start recording to allow microphone access.";
+      message = "Open echo and tap Start recording to allow microphone access.";
       captureState = "Microphone unavailable";
       resumeNotification(this);
       stopSelf(id);
@@ -280,6 +278,7 @@ public final class RecordingService extends Service {
                 .build());
       AudioRecord next = builder.build();
       recorder = next;
+      audioSessionId = next.getAudioSessionId();
       next.registerAudioRecordingCallback(
           command -> captureHandler.post(command), recordingCallback);
       long captureStartMs = System.currentTimeMillis();
@@ -306,13 +305,8 @@ public final class RecordingService extends Service {
               prefs.getInt("bitrate", 32000),
               new StatFs(getFilesDir().getPath()).getBlockSizeLong());
       epoch++;
+      amplitudeHistory.reset();
       publish();
-      activityEnabled = prefs.getBoolean("activity", false);
-      activityDetector =
-          new ActivityDetector(
-              prefs.getInt("activity_db", -40),
-              prefs.getInt("activity_pre", 2),
-              prefs.getInt("activity_post", 2));
       sessionStartMs = captureStartMs;
       startMs = sessionStartMs;
       autoCursor = 0;
@@ -322,11 +316,11 @@ public final class RecordingService extends Service {
       lastReadMs = lastAutoElapsed;
       readFailures = 0;
       silenced = false;
+      prefs.edit().putBoolean("history_settings_pending", false).apply();
       captureState = playbackProjection == null ? "Listening" : "Listening // device audio";
       wakeLock.acquire(10 * 60 * 1000L);
       captureHandler.removeCallbacks(readAudio);
       captureHandler.post(readAudio);
-      prefs.edit().putBoolean("history_settings_pending", false).apply();
       main.post(tools::restoreConfigured);
       notifyState();
     } catch (IOException | RuntimeException | OutOfMemoryError e) {
@@ -353,7 +347,7 @@ public final class RecordingService extends Service {
               if (silenced) {
                 captureState = "Microphone unavailable";
                 message =
-                    "Another app has microphone priority. Echo will resume when it is available.";
+                    "Another app has microphone priority. echo will resume when it is available.";
                 notifyState();
               } else if (wasSilenced) recover();
             }
@@ -380,23 +374,11 @@ public final class RecordingService extends Service {
               readFailures = 0;
               if (!silenced) {
                 history.write(pcm, count);
-                long square = 0;
-                for (int i = 0; i < count; i++) square += (long) pcm[i] * pcm[i];
-                waveform[waveformIndex++ % waveform.length] =
-                    (float) Math.sqrt(square / (double) count) / 32768;
-                float[] ordered = new float[waveform.length];
-                for (int i = 0; i < waveform.length; i++)
-                  ordered[i] = waveform[(waveformIndex + i) % waveform.length];
-                amplitudes = ordered;
+                amplitudeHistory.accept(pcm, count);
                 captureState =
                     playbackProjection == null ? "Listening" : "Listening // device audio";
                 publish();
                 tools.pcm(pcm, count);
-                if (activityEnabled) {
-                  ActivityDetector.Event event =
-                      activityDetector.process(Math.sqrt(square / (double) count), count);
-                  if (event != null) beginSaveRange(event.start, event.end, "activity", false);
-                }
               }
             }
             if (++tickCount % 50 == 0) {
@@ -405,7 +387,7 @@ public final class RecordingService extends Service {
             }
             captureHandler.postDelayed(this, count == pcm.length ? 1 : 20);
           } catch (IOException | RuntimeException | OutOfMemoryError e) {
-            message = "Recording was interrupted. Echo is trying to reconnect.";
+            message = "Recording was interrupted. echo is trying to reconnect.";
             recover();
           }
         }
@@ -444,6 +426,7 @@ public final class RecordingService extends Service {
       }
       recorder.release();
       recorder = null;
+      audioSessionId = 0;
     }
     if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
     if (history != null && flush)
@@ -608,6 +591,7 @@ public final class RecordingService extends Service {
             if (partial != null) partial.delete();
             saveState = "";
             final boolean locallySaved = completed != null;
+            if (completed != null) com.klob.echo.speech.AnalysisWorker.saved(this, completed);
             captureHandler.post(
                 () -> {
                   busy.set(false);
@@ -739,7 +723,7 @@ public final class RecordingService extends Service {
     return new NotificationCompat.Builder(this, CHANNEL)
         .setSmallIcon(R.drawable.ic_stat_notify_recording)
         .setContentTitle(
-            "Echo // "
+            "echo // "
                 + (state.startsWith("Listening") ? getString(R.string.recording) : state)
                 + (busy.get() ? " // saving" : "")
                 + (tools == null ? "" : tools.summary()))
@@ -754,7 +738,7 @@ public final class RecordingService extends Service {
   }
 
   public synchronized String diagnosticReport() {
-    return "Echo "
+    return "echo "
         + BuildConfig.VERSION_NAME
         + " ("
         + BuildConfig.VERSION_CODE

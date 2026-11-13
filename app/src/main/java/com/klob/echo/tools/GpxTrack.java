@@ -115,7 +115,7 @@ public class GpxTrack {
         new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
     try {
       out.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-      out.write("<gpx version=\"1.1\" creator=\"Echo\"\n");
+      out.write("<gpx version=\"1.1\" creator=\"echo\"\n");
       out.write("     xmlns=\"http://www.topografix.com/GPX/1/1\">\n");
       out.write("  <metadata>\n");
       date.setTime(points.get(0).timeMillis);

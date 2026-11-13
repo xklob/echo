@@ -1,20 +1,24 @@
-# Echo
+# echo
 
-Save audio from the past. This fork consolidates the recorder and useful additions from the Echo fork network into one Android app.
+Save audio from the past. This fork consolidates the recorder and useful additions from the echo fork network into one Android app.
 
-Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original Echo. Current release: [2.3.0](https://github.com/xklob/echo/releases/tag/v2.3.0), versionCode `20`.
+Android 11 or newer. Application ID: `com.klob.echo`, so it can coexist with original echo. Current release: [2.4.0](https://github.com/xklob/echo/releases/tag/v2.4.0), versionCode `21`.
 
 ## Screenshots
 
-Echo 2.3.0 on an Android 17 emulator, using generated demo recordings, notes and GPS data. System, Light and Dark themes are available; System is the default.
+echo 2.4.0 on an Android 17 emulator, using generated demo recordings and GPS data. System, Light and Dark themes are available; System is the default.
 
 <p>
   <img src="docs/screenshots/record-dark.png" width="280" alt="Record and save recent audio in the black and green theme" />
-  <img src="docs/screenshots/library.png" width="280" alt="Audio clips with GPS and related-note previews" />
-  <img src="docs/screenshots/clip-detail.png" width="280" alt="Recording detail with playback and a map of saved GPS fixes" />
-  <img src="docs/screenshots/tools.png" width="280" alt="Persistent location, keyword and camera tools" />
+  <img src="docs/screenshots/save-clip.png" width="280" alt="Choose recent audio to save, including the remembered custom duration" />
+  <img src="docs/screenshots/library.png" width="280" alt="Audio clips with GPS and speech status" />
+  <img src="docs/screenshots/clip-detail.png" width="280" alt="Scrubbable recording waveform with speech marked in green" />
+  <img src="docs/screenshots/location.png" width="280" alt="Saved GPS route on the recording's map" />
+  <img src="docs/screenshots/tools.png" width="280" alt="Persistent location and spoken camera tools" />
   <img src="docs/screenshots/settings.png" width="280" alt="Organized recording settings" />
-  <img src="docs/screenshots/keywords.png" width="280" alt="Offline keyword alerts and speech model setup" />
+  <img src="docs/screenshots/camera.png" width="280" alt="Spoken front- and back-camera commands and video duration" />
+  <img src="docs/screenshots/transcript.png" width="280" alt="Offline speech analysis and a transcript with words that seek playback" />
+  <img src="docs/screenshots/speech-settings.png" width="280" alt="Separate automatic speech detection and transcription settings" />
   <img src="docs/screenshots/record-light.png" width="280" alt="Record screen in the light theme" />
 </p>
 
@@ -24,26 +28,33 @@ Echo 2.3.0 on an Android 17 emulator, using generated demo recordings, notes and
 - [ ] Wearable integration, such as recording from a watch.
 - [ ] A web dashboard and control panel.
 - [ ] Semantic search through recordings.
+- [ ] Optional server transcription.
 
 These are separate from unfinished source integration. See the [custom-feature backlog](docs/custom-feature-backlog.md).
 
 ## Use
 
-Open **Record**, tap **START RECORDING**, allow microphone access, then choose how far back to keep and tap **SAVE CLIP**. **STOP RECORDING** stays stopped. After a reboot or process recreation, open Echo and tap **RESUME RECORDING**; Android does not permit unrestricted microphone startup from a boot receiver.
+echo checks for another active microphone recording before you start or switch to the microphone. A warning offers **CANCEL** or **CONTINUE** without probing or taking over the input first. Android hides app identities and normally hides system-audio capture from this check, so screen sharing and device-audio capture always show a session-replacement warning before Android’s permission screen. These interactive checks cannot prevent another app taking priority later; runtime interruption handling remains active.
 
-Use **Library** to browse audio clips. Cards show duration, source and available context. Tap a clip for playback, GPS locations, related notes/captures and recording details; its overflow menu has share, rename and delete. **Saved notes and captures** in the Library menu or Tools opens the separate files. **Settings** holds recording preferences. Bottom navigation becomes a side rail in wider windows.
+Open **Record**, tap **START RECORDING**, allow microphone access, then choose how far back to keep and tap **SAVE CLIP**. **STOP RECORDING** stays stopped. After a reboot or process recreation, open echo and tap **RESUME RECORDING**; Android does not permit unrestricted microphone startup from a boot receiver.
+
+Use **Library** to browse audio clips. Cards show duration, source and available context. Tap a clip for a detailed waveform, playback, speech analysis, transcription, GPS locations and related captures; its overflow menu has share, rename and delete. **Saved captures** in the Library menu or Tools opens the separate files. **Settings** holds recording preferences. Bottom navigation becomes a side rail in wider windows.
 
 **Custom duration** remembers your entered value and whether it is selected, including after reopening the app. Selecting a preset keeps that custom value available. Saving uses as much of the selected duration as is actually present in history.
 
-Clip context is matched by time. GPS fixes and notes inside the captured interval appear with that clip; videos may overlap the interval. Overlapping audio clips can share the same context. GPS gaps remain separate route segments. Files without reliable recording timestamps remain playable but are not given guessed context. Renaming preserves associations; deleting audio keeps the separate notes, captures and GPS files.
+Clip context is matched by time. GPS fixes and screenshots inside the captured interval appear with that clip; videos may overlap the interval. Overlapping audio clips can share the same context. GPS gaps remain separate route segments. Files without reliable recording timestamps remain playable but are not given guessed context. Renaming preserves associations; deleting audio keeps the separate captures and GPS files.
 
-Maps use MapLibre with OpenFreeMap basemaps. The route is drawn from local GPS files. Online map requests disclose the viewed area to the tile provider; Echo does not upload the GPX file or audio to it. Without a basemap connection, saved coordinates and the route remain available. Maps do not request live location permission to display an existing clip.
+Maps use MapLibre with OpenFreeMap basemaps. The route is drawn from local GPS files. Online map requests disclose the viewed area to the tile provider; echo does not upload the GPX file or audio to it. Without a basemap connection, saved coordinates and the route remain available. Maps do not request live location permission to display an existing clip.
 
-Settings control history budgets, quality, format, automatic saves and listening rules. Each switch saves immediately; value dialogs validate before saving. There is no global Apply button. Changes are saved while recording; history, quality and activity changes take effect when recording next starts. Invalid values are highlighted instead of silently ignored. Equal start/end hours mean all day; overnight windows are supported. Android can delay schedule transitions when exact-alarm access is unavailable.
+Settings control history budgets, quality, format, automatic saves and listening rules. Each switch saves immediately; value dialogs validate before saving. There is no global Apply button. Changes are saved while recording; history and quality changes take effect when recording next starts. Invalid values are highlighted instead of silently ignored. Equal start/end hours mean all day; overnight windows are supported. Android can delay schedule transitions when exact-alarm access is unavailable.
 
 Saved files stay in private app storage. Share recordings before uninstalling. An optional folder picker creates verified additional copies; library rename/delete affects local files. Folder copies remain independent and do not follow automatic local retention. Revoked grants and provider errors are reported while the local recording is kept. No all-files permission is requested.
 
-Automatic retention applies separately to automatic, continuous and activity clips. Manual clips remain until deleted. A continuous segment uses the configured autosave interval; stopping flushes its remaining tail. Only one export runs at once.
+The Record screen shows the amplitude history of the audio that **SAVE CLIP** would keep. It expands as history fills, then rolls with the selected duration, fitting the available screen width. Only available audio is shown.
+
+**Rolling history is temporary:** the oldest audio is replaced as the RAM/storage budget fills. **SAVE CLIP** copies the selected recent audio into Library. It does not start a recording of that length. Unsaved history is cleared by a new recording session or process restart.
+
+**Keep this session in clips** saves new audio from the moment you enable it, using the interval in **Settings → Saving clips**. Turning it off or stopping recording saves the final short clip. **Save clips automatically in every session** is the persistent alternative. Retention applies separately to those two groups; manual clips stay until deleted. Choose an interval shorter than available history, or enable early saving as history fills. Only one audio export runs at once.
 
 History is compressed before saving. WAV and FLAC decode that Opus history; they cannot restore discarded quality. Opus preserves compressed packets without re-encoding. AAC can include encoder priming/padding; the clip JSON records captured duration separately. Approximate file sizes are labelled as estimates.
 
@@ -51,15 +62,18 @@ Microphone interruptions freeze usable history. Recovery starts a new history an
 
 ## Optional tools
 
-Tools are off until explicitly enabled. Location, camera and keyword-alert choices persist across recording sessions. Stopping recording pauses their operation without clearing those choices. Camera, location and screen capture request their permissions or native Android consent separately. Capture state remains visible in the foreground notification.
+Tools are off until enabled. Location and spoken-camera choices persist across recording sessions. Stopping recording pauses them without clearing their choices. Camera, location and screen capture request their permissions or native Android consent separately. Capture state remains visible in the foreground notification.
 
-- Activity saves detect loudness, including non-speech. Threshold and pre/post-roll are configurable. Ordinary quiet audio remains saveable.
-- Keyword recognition uses the same captured samples. Install the optional US-English Vosk model from **Tools → Keyword alerts**; recognition stays offline after installation. The approximately 40 MB download and substantial native model RAM are additional to the history budget. Both library and supplied model use Apache-2.0.
+- **Spoken camera commands:** enable in **Tools → Spoken camera commands**. Say **echo back echo** for the back camera or **echo front echo** for the front camera. Both default to **30 seconds of video with sound**. Edit each phrase and choose 5–600 seconds. Buttons can record either camera manually. Full phrases trigger after recognition completes; commands during a camera recording/save are ignored. Requires microphone recording, camera permission and the optional English model. No second microphone is opened. Missing-camera controls are disabled; a front-camera-only device never substitutes its front camera for a back-camera command. Camera failures leave audio recording running.
+- **Speech and transcripts:** each audio clip has a waveform you can scrub and zoom. **ANALYZE SPEECH** marks speech regions in green using the bundled, offline Silero detector. **TRANSCRIBE** produces English text with tappable word timestamps and a shareable text file, and also marks speech. Install the ~40 MB Vosk English model under **Settings → Speech and transcripts**. The same model serves camera commands. Processing stays on the device, uses additional memory/battery, and can make mistakes; silence or an empty transcript is not proof that nobody spoke.
+- Separate **automatic speech detection** and **automatic transcription** switches apply to newly saved audio clips and default off. Existing clips use the manual controls. Work is queued with visible, cancelable progress. Renaming and deleting clips includes their analysis and transcript files. Automatic audio-folder exports happen before analysis; later analysis is retained locally and included in configured server backups, and transcripts can be shared separately.
 - GPS writes timestamped GPX traces. Audio sample times and GPS fixes share wall-clock associations, not sample-perfect synchronization.
-- Shake capture uses four swings followed by a return to the prior level of motion. The current configuration records silent five-second rear-camera clips. A capture-now button is also available. Camera/microphone concurrency depends on the device.
+
 - Screenshots require native screen-capture consent and stop with that consent/session. Device-audio capture needs a separate consent session and works only with permitted playback usages/apps. It cannot run alongside screenshots in this build. Microphone/device source changes explicitly reset history.
-- Notes and imported branching surveys are saved as separate traces. See [survey format](docs/survey-format.md).
+- Another app starting screen sharing can end echo’s projection session. If echo was recording device audio, recording stops; microphone recording does not depend on a projection session. Two apps competing for the microphone may be silenced by Android’s priority rules.
 - Server sync is opt-in; its token is protected by Android Keystore. See [server](server/README.md). No upload occurs with default settings.
+
+Shake detection, general keyword alerts, loudness-triggered audio saves, notes and surveys were removed in 2.4.0. Older note/survey files are left intact but no longer appear as clip context or tools. Existing saved clips and events remain accessible.
 
 Simultaneous microphone + device-audio synchronization and automatic multi-quality history remain blocked source experiments. No placeholder controls are shipped. See the [integration ledger](docs/integration-ledger.md).
 
@@ -80,7 +94,7 @@ For a signed minified release, set `ECHO_SIGNING_PROPERTIES` to a private proper
 ECHO_SIGNING_PROPERTIES=/private/path/signing.properties ./gradlew assembleRelease lintRelease
 ```
 
-Without signing configuration, release builds remain unsigned. Klobstore tracks the standalone signed APK from GitHub Releases.
+Without signing configuration, release builds remain unsigned. klobstore tracks the standalone signed APK from GitHub Releases.
 
 See [testing](docs/testing.md), [architecture](docs/architecture.md), [automation](docs/automation.md), [changelog](CHANGELOG.md), and the separate [custom-feature backlog](docs/custom-feature-backlog.md). Device coverage and physical-device gaps are recorded in testing, rather than inferred from a successful build.
 

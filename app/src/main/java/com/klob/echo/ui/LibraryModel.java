@@ -4,6 +4,7 @@ import android.app.Application;
 import androidx.lifecycle.*;
 import com.klob.echo.R;
 import com.klob.echo.library.*;
+import com.klob.echo.speech.*;
 import com.klob.echo.storage.*;
 import java.io.*;
 import java.nio.file.*;
@@ -34,7 +35,25 @@ public final class LibraryModel extends AndroidViewModel {
               + " · "
               + info.format
               + (info.source.isEmpty() ? "" : " · " + LibraryText.source(app, info.source));
-      contextText = LibraryText.context(app, recording);
+      String speechLabel = "";
+      try {
+        org.json.JSONObject metadata =
+            new org.json.JSONObject(Io.read(new File(file.getPath() + ".json").toPath()));
+        if (metadata.optBoolean("speech_analyzed"))
+          speechLabel =
+              app.getString(
+                  metadata.optLong("speech_ms") > 0
+                      ? R.string.speech_badge
+                      : R.string.no_speech_badge);
+        if (metadata.optBoolean("transcribed"))
+          speechLabel +=
+              (speechLabel.isEmpty() ? "" : " · ") + app.getString(R.string.transcript_badge);
+      } catch (Exception ignored) {
+      }
+      String contextLabel = LibraryText.context(app, recording);
+      contextText =
+          contextLabel
+              + (speechLabel.isEmpty() ? "" : (contextLabel.isEmpty() ? "" : "\n") + speechLabel);
       preview = LibraryText.preview(app, recording);
     }
 
@@ -102,16 +121,28 @@ public final class LibraryModel extends AndroidViewModel {
   void delete(File file) {
     worker.execute(
         () -> {
-          boolean ok = file.delete();
-          if (ok) {
-            File meta = metadata(file);
-            if (meta.exists()) ok = meta.delete();
+          boolean ok;
+          synchronized (ClipAnalysis.FILE_LOCK) {
+            ok = file.delete();
+            if (ok) {
+              AnalysisWorker.cancel(getApplication(), file);
+              for (File companion : companions(file))
+                if (companion.exists() && !companion.delete()) ok = false;
+            }
           }
           feedback.postValue(ok ? R.string.file_deleted : R.string.file_delete_failed);
           load();
           String path = detailPath;
           if (path != null && path.equals(file.getPath())) loadDetail(path);
         });
+  }
+
+  private static List<File> companions(File file) {
+    List<File> result = new ArrayList<>();
+    result.add(metadata(file));
+    if (ClipStore.isAudio(file.getName()))
+      for (String suffix : ClipAnalysis.SUFFIXES) result.add(ClipAnalysis.file(file, suffix));
+    return result;
   }
 
   private static File metadata(File file) {
@@ -129,36 +160,42 @@ public final class LibraryModel extends AndroidViewModel {
                   name + file.getName().substring(file.getName().lastIndexOf('.')));
           if (target.equals(file)) return;
           File metadata = metadata(file), targetMetadata = metadata(target);
-          boolean moved = false;
-          try {
-            if (target.exists() || targetMetadata.exists()) throw new IOException();
-            if (!ClipStore.isAudio(file.getName()) && !metadata.exists()) {
-              File partial = new File(metadata.getPath() + ".part");
-              try {
-                Io.write(partial.toPath(), new TraceItem(file).metadata().toString());
-                Files.move(partial.toPath(), metadata.toPath(), StandardCopyOption.ATOMIC_MOVE);
-              } finally {
-                partial.delete();
+          List<File[]> moved = new ArrayList<>();
+          synchronized (ClipAnalysis.FILE_LOCK) {
+            try {
+              if (target.exists()) throw new IOException();
+              for (File companion : companions(target))
+                if (companion.exists()) throw new IOException();
+              if (!ClipStore.isAudio(file.getName()) && !metadata.exists()) {
+                ClipAnalysis.atomicText(metadata, new TraceItem(file).metadata().toString());
               }
-            }
-            Files.move(file.toPath(), target.toPath());
-            moved = true;
-            if (metadata.exists()) Files.move(metadata.toPath(), targetMetadata.toPath());
-            feedback.postValue(R.string.saved);
-            if (file.getPath().equals(detailPath)) {
-              detailPath = target.getPath();
-              new android.os.Handler(android.os.Looper.getMainLooper())
-                  .post(() -> state.set("detail_path", target.getPath()));
-              RecordingContext recording = repository.recording(target);
-              detail.postValue(recording == null ? null : new Item(getApplication(), recording));
-            }
-          } catch (Exception e) {
-            if (moved)
-              try {
-                Files.move(target.toPath(), file.toPath());
-              } catch (IOException ignored) {
+              List<File> before = companions(file), after = companions(target);
+              before.add(file);
+              after.add(target);
+              for (int i = 0; i < before.size(); i++) {
+                if (before.get(i).exists()) {
+                  Files.move(before.get(i).toPath(), after.get(i).toPath());
+                  moved.add(new File[] {before.get(i), after.get(i)});
+                }
               }
-            feedback.postValue(R.string.rename_failed);
+              AnalysisWorker.cancel(getApplication(), file);
+              feedback.postValue(R.string.saved);
+              if (file.getPath().equals(detailPath)) {
+                detailPath = target.getPath();
+                new android.os.Handler(android.os.Looper.getMainLooper())
+                    .post(() -> state.set("detail_path", target.getPath()));
+                RecordingContext recording = repository.recording(target);
+                detail.postValue(recording == null ? null : new Item(getApplication(), recording));
+              }
+            } catch (Exception e) {
+              Collections.reverse(moved);
+              for (File[] pair : moved)
+                try {
+                  Files.move(pair[1].toPath(), pair[0].toPath());
+                } catch (IOException ignored) {
+                }
+              feedback.postValue(R.string.rename_failed);
+            }
           }
           load();
         });

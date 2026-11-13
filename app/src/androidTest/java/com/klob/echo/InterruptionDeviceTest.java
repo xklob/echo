@@ -56,12 +56,17 @@ public class InterruptionDeviceTest {
                     new Intent(activity, RecordingService.class)
                         .setAction(RecordingService.ACTION_START)));
         await(() -> s[0].captureState.equals("Listening") && s[0].availableSamples > 4800);
+        assertFalse(
+            com.klob.echo.recording.CaptureConflicts.read(c, s[0].audioSessionId).microphone);
         long oldStart = s[0].startMs;
         c.startActivity(
             new Intent()
                 .setClassName("com.klob.echo.test", "com.klob.echo.MicrophoneFixtureActivity")
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         await(() -> s[0].captureState.equals("Microphone unavailable"));
+        // Per-recorder silencing and the global configuration list are published separately.
+        await(
+            () -> com.klob.echo.recording.CaptureConflicts.read(c, s[0].audioSessionId).microphone);
         long frozen = s[0].endSample;
         Thread.sleep(1500);
         assertEquals("Silenced samples became usable history", frozen, s[0].endSample);

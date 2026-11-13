@@ -56,6 +56,8 @@ public class LibraryDeviceTest {
       f.delete();
       new File(f.getPath() + ".json").delete();
       TraceItem.metadata(f).delete();
+      for (String suffix : com.klob.echo.speech.ClipAnalysis.SUFFIXES)
+        com.klob.echo.speech.ClipAnalysis.file(f, suffix).delete();
     }
     try (java.util.stream.Stream<Path> paths = Files.walk(sandbox.toPath())) {
       paths.sorted(Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
@@ -132,10 +134,12 @@ public class LibraryDeviceTest {
   @Test
   public void audioOnlyLibraryJoinsExactIntervalsAndPreservesSharedTraces() throws Exception {
     File first = clip(isolated, "First", START), second = clip(isolated, "Second", START + 5000);
-    File inside = trace(isolated, START + 6000, "_note.txt", "Shared note");
-    trace(isolated, START + 10000, "_note.txt", "At end of first clip");
-    trace(isolated, START - 1, "_note.txt", "Before both clips");
-    trace(isolated, START, "_survey.json", "{}");
+    File inside = trace(isolated, START + 6000, "_screen.jpg", "Shared screenshot");
+    trace(isolated, START + 10000, "_screen.jpg", "At end of first clip");
+    trace(isolated, START - 1, "_screen.jpg", "Before both clips");
+    trace(isolated, START, "_screen.jpg", "At start");
+    File legacyNote = trace(isolated, START, "_note.txt", "Legacy note");
+    File legacySurvey = trace(isolated, START, "_survey.json", "{}");
     File route =
         track(
             isolated,
@@ -158,6 +162,11 @@ public class LibraryDeviceTest {
     assertEquals(1, repository.recordings().size());
     assertTrue(inside.isFile());
     assertTrue(route.isFile());
+    assertTrue(legacyNote.isFile());
+    assertTrue(legacySurvey.isFile());
+    assertTrue(
+        repository.traces().stream()
+            .noneMatch(t -> t.file.equals(legacyNote) || t.file.equals(legacySurvey)));
   }
 
   @Test
@@ -165,7 +174,7 @@ public class LibraryDeviceTest {
     File audio = clip(isolated, "Without metadata", START);
     new File(audio.getPath() + ".json").delete();
     audio.setLastModified(START);
-    trace(isolated, START + 1000, "_note.txt", "Unrelated until timing is known");
+    trace(isolated, START + 1000, "_screen.jpg", "Unrelated until timing is known");
     track(isolated, point(START + 1000, 37.5, -77.4));
     RecordingContext context = new RecordingRepository(isolated).recording(audio);
     assertNull(context.recording.window);
@@ -234,7 +243,13 @@ public class LibraryDeviceTest {
   @Test
   public void libraryCardsOpenDetailWithPlayerMapAndContextAfterRecreation() throws Exception {
     File audio = clip(app, "Library UI fixture", START);
-    trace(app, START + 1000, "_note.txt", "Library detail fixture note");
+    com.klob.echo.speech.ClipAnalysis analysis = new com.klob.echo.speech.ClipAnalysis();
+    analysis.duration = 10000;
+    analysis.analyzed = analysis.transcribed = true;
+    analysis.speech.add(new long[] {1000, 4000});
+    analysis.words.add(new com.klob.echo.speech.ClipAnalysis.Word("hello", 1200, 1800));
+    analysis.write(audio);
+    trace(app, START + 1000, "_screen.jpg", "Library detail screenshot");
     track(app, point(START + 1000, 37.54, -77.44) + point(START + 3000, 37.541, -77.439));
     try (ActivityScenario<MainActivity> main = ActivityScenario.launch(MainActivity.class)) {
       main.onActivity(
@@ -261,7 +276,9 @@ public class LibraryDeviceTest {
             for (int i = 0; i < rows.size(); i++)
               if (rows.get(i).file.equals(audio)) {
                 assertTrue(rows.get(i).contextText.contains("GPS"));
-                assertTrue(rows.get(i).preview.contains("Library detail fixture note"));
+                assertTrue(
+                    rows.get(i).recording.attachments.stream()
+                        .anyMatch(t -> t.type.equals("image")));
                 list.scrollToPosition(i);
               }
           });
@@ -283,7 +300,25 @@ public class LibraryDeviceTest {
           a -> {
             assertNotNull(a.findViewById(R.id.clip_map));
             assertNotNull(a.findViewById(R.id.clip_context));
+            View waveform = a.findViewById(R.id.clip_waveform);
+            assertNotNull(waveform);
+            Bundle seek = new Bundle();
+            seek.putFloat(
+                android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_PROGRESS_VALUE,
+                3500);
+            assertTrue(
+                waveform.performAccessibilityAction(
+                    android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction
+                        .ACTION_SET_PROGRESS
+                        .getId(),
+                    seek));
             a.findViewById(R.id.clip_play_pause).performClick();
+          });
+      Thread.sleep(350);
+      detail.onActivity(
+          a -> {
+            com.google.android.material.slider.Slider seek = a.findViewById(R.id.playback_seek);
+            assertTrue("Waveform scrubbing must seek the native player", seek.getValue() >= 3400);
           });
       detail.recreate();
       ready.set(false);
@@ -305,6 +340,10 @@ public class LibraryDeviceTest {
                   .get(LibraryModel.class)
                   .rename(audio, "Renamed audio fixture"));
       await(() -> renamed.isFile() && new File(renamed.getPath() + ".json").isFile());
+      assertTrue(com.klob.echo.speech.ClipAnalysis.read(renamed).transcribed);
+      assertEquals(
+          "hello",
+          Io.read(com.klob.echo.speech.ClipAnalysis.file(renamed, ".transcript.txt").toPath()));
       detail.recreate();
       ready.set(false);
       await(
@@ -319,6 +358,8 @@ public class LibraryDeviceTest {
           });
       detail.onActivity(a -> new ViewModelProvider(a).get(LibraryModel.class).delete(renamed));
       await(() -> !renamed.exists());
+      for (String suffix : com.klob.echo.speech.ClipAnalysis.SUFFIXES)
+        assertFalse(com.klob.echo.speech.ClipAnalysis.file(renamed, suffix).exists());
       assertTrue(
           new TraceStore(app).list().stream().anyMatch(f -> f.getName().endsWith("_route.gpx")));
     }

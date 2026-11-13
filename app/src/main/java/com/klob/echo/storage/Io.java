@@ -14,8 +14,12 @@ public final class Io {
   }
 
   public static String read(Path path) throws IOException {
+    return read(path, 65536);
+  }
+
+  public static String read(Path path, int maximum) throws IOException {
     try (InputStream in = Files.newInputStream(path)) {
-      return new String(readBytes(in, 65536), StandardCharsets.UTF_8);
+      return new String(readBytes(in, maximum), StandardCharsets.UTF_8);
     }
   }
 

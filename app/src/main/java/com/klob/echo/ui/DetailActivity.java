@@ -46,11 +46,9 @@ public final class DetailActivity extends AppCompatActivity {
               ? new ClipDetailFragment()
               : page.equals("extras")
                   ? new LibraryFragment()
-                  : page.equals("survey_run")
-                      ? new SurveyFragment()
-                      : page.startsWith("tool_")
-                          ? new ToolDetailFragment()
-                          : new SettingsDetailFragment();
+                  : page.startsWith("tool_")
+                      ? new ToolDetailFragment()
+                      : new SettingsDetailFragment();
       Bundle args = new Bundle();
       args.putString("page", page);
       args.putBoolean("extras", page.equals("extras"));

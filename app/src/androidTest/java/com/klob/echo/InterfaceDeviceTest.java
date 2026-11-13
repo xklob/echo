@@ -175,58 +175,44 @@ public class InterfaceDeviceTest {
   }
 
   @Test
-  public void noteDraftSurvivesRecreationAndSavesOneCopy() throws Exception {
-    String value = "Rotation check " + System.nanoTime();
-    int before = new TraceStore(context).list().size();
+  public void cameraPhrasesAndNumericDraftSurviveRecreation() throws Exception {
+    shell("pm grant " + context.getPackageName() + " android.permission.CAMERA");
+    assertEquals(30, AppSettings.prefs(context).getInt("camera_seconds", 30));
     try (ActivityScenario<DetailActivity> activity =
-        ActivityScenario.launch(DetailActivity.intent(context, "tool_note", R.string.new_note))) {
-      activity.onActivity(a -> ((EditText) a.findViewById(R.id.note_text)).setText(value));
-      activity.recreate();
+        ActivityScenario.launch(DetailActivity.intent(context, "tool_camera", R.string.camera))) {
       activity.onActivity(
           a -> {
-            assertEquals(value, ((EditText) a.findViewById(R.id.note_text)).getText().toString());
-            find(a.getWindow().getDecorView(), "SAVE NOTE").performClick();
-          });
-      await(() -> new TraceStore(context).list().size() == before + 1);
-      activity.recreate();
-      Thread.sleep(150);
-      assertEquals(before + 1, new TraceStore(context).list().size());
-      boolean found = false;
-      for (File f : new TraceStore(context).list())
-        if (f.getName().endsWith(".txt") && Io.read(f.toPath()).equals(value)) found = true;
-      assertTrue(found);
-    }
-  }
-
-  @Test
-  public void keywordChoiceIsGlobalAndNumericDraftSurvivesRecreation() throws Exception {
-    try (ActivityScenario<DetailActivity> activity =
-        ActivityScenario.launch(
-            DetailActivity.intent(context, "tool_keywords", R.string.keywords))) {
-      activity.onActivity(
-          a -> {
-            ((View) find(a.getWindow().getDecorView(), "Words to detect").getParent().getParent())
+            ((View)
+                    find(a.getWindow().getDecorView(), a.getString(R.string.camera_back_phrase))
+                        .getParent()
+                        .getParent())
                 .performClick();
             a.getSupportFragmentManager().executePendingTransactions();
             AlertDialog dialog =
                 (AlertDialog)
-                    ((DialogFragment) a.getSupportFragmentManager().findFragmentByTag("words"))
+                    ((DialogFragment)
+                            a.getSupportFragmentManager().findFragmentByTag("back_phrase"))
                         .requireDialog();
-            ((EditText) dialog.findViewById(R.id.input_value)).setText("echo, remember");
+            ((EditText) dialog.findViewById(R.id.input_value)).setText("record the back camera");
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
-            ((CompoundButton) a.findViewById(R.id.keyword_enabled)).setChecked(true);
+            ((CompoundButton) a.findViewById(R.id.camera_enabled)).setChecked(true);
           });
       activity.recreate();
       activity.onActivity(
-          a -> assertTrue(((CompoundButton) a.findViewById(R.id.keyword_enabled)).isChecked()));
+          a -> assertTrue(((CompoundButton) a.findViewById(R.id.camera_enabled)).isChecked()));
     }
-    assertTrue(AppSettings.prefs(context).getBoolean("keywords_enabled", false));
+    assertTrue(AppSettings.prefs(context).getBoolean("voice_camera_enabled", false));
+    assertEquals(
+        "record the back camera", AppSettings.prefs(context).getString("camera_back_phrase", ""));
     try (ActivityScenario<DetailActivity> activity =
         ActivityScenario.launch(
             DetailActivity.intent(context, "history", R.string.history_quality))) {
       activity.onActivity(
           a -> {
-            ((View) find(a.getWindow().getDecorView(), "Memory budget").getParent().getParent())
+            ((View)
+                    find(a.getWindow().getDecorView(), a.getString(R.string.memory_budget))
+                        .getParent()
+                        .getParent())
                 .performClick();
             a.getSupportFragmentManager().executePendingTransactions();
             AlertDialog dialog =

@@ -19,13 +19,29 @@ public final class ConfirmDialog extends DialogFragment {
     d.show(manager, "confirm");
   }
 
+  static void show(
+      FragmentManager manager, int title, String message, int positive, String action) {
+    if (manager.findFragmentByTag("confirm") != null) return;
+    ConfirmDialog d = new ConfirmDialog();
+    Bundle b = new Bundle();
+    b.putInt("title", title);
+    b.putString("message_text", message);
+    b.putInt("positive", positive);
+    b.putString("action", action);
+    d.setArguments(b);
+    d.show(manager, "confirm");
+  }
+
   @NonNull
   @Override
   public Dialog onCreateDialog(Bundle state) {
     Bundle b = requireArguments();
     return new MaterialAlertDialogBuilder(requireContext())
         .setTitle(b.getInt("title"))
-        .setMessage(b.getInt("message"))
+        .setMessage(
+            b.containsKey("message_text")
+                ? b.getString("message_text")
+                : getString(b.getInt("message")))
         .setNegativeButton(R.string.cancel, null)
         .setPositiveButton(
             b.getInt("positive"),

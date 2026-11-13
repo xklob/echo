@@ -7,13 +7,12 @@ import android.content.pm.*;
 import android.location.*;
 import android.media.*;
 import android.os.*;
-import androidx.core.app.NotificationCompat;
-import com.klob.echo.R;
+import com.klob.echo.core.CameraCommand;
 import com.klob.echo.storage.TraceStore;
+import com.klob.echo.tools.CameraCommandDetector;
+import com.klob.echo.tools.CameraRecorder;
 import com.klob.echo.tools.GpxTrack;
-import com.klob.echo.tools.KeywordDetector;
 import com.klob.echo.tools.ScreenCapturer;
-import com.klob.echo.tools.ShakeCameraCapturer;
 import com.klob.echo.tools.TraceSync;
 import java.io.*;
 import java.util.concurrent.*;
@@ -24,9 +23,9 @@ public final class CaptureTools {
   private final TraceStore traces;
   private final ExecutorService io =
       new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(32));
-  public final ShakeCameraCapturer camera;
+  public final CameraRecorder camera;
   public final ScreenCapturer screen;
-  public final KeywordDetector keywords;
+  public final CameraCommandDetector commands;
   public final TraceSync sync;
   private long nextSync;
   private String activeWords = "";
@@ -41,9 +40,9 @@ public final class CaptureTools {
     traces = new TraceStore(service);
     sync = new TraceSync(service, value -> service.message = value);
     camera =
-        new ShakeCameraCapturer(
+        new CameraRecorder(
             service,
-            new ShakeCameraCapturer.Listener() {
+            new CameraRecorder.Listener() {
               public File tracesDir() {
                 return traces.directory();
               }
@@ -74,41 +73,15 @@ public final class CaptureTools {
                 service.message = reason;
               }
             });
-    keywords =
-        new KeywordDetector(
+    commands =
+        new CameraCommandDetector(
             service,
-            word -> {
-              service.message = "Keyword heard: " + word;
-              try {
-                service
-                    .getSystemService(android.app.NotificationManager.class)
-                    .notify(
-                        460,
-                        new NotificationCompat.Builder(service, "keyword")
-                            .setSmallIcon(R.drawable.ic_stat_notify_recording)
-                            .setContentTitle("Echo // keyword heard")
-                            .setContentText(word)
-                            .setAutoCancel(true)
-                            .build());
-              } catch (SecurityException ignored) {
-              }
-              submit(
-                  () -> {
-                    try {
-                      traces.text(
-                          "_keyword",
-                          ".txt",
-                          TraceStore.timestampName(System.currentTimeMillis()) + " // " + word);
-                    } catch (IOException e) {
-                      service.message = "Could not save keyword event.";
-                    }
-                  });
+            facing -> {
+              if (camera.isRunning() && !service.isPlaybackCapture()) camera.captureNow(facing);
             });
     service
         .getSystemService(android.app.NotificationManager.class)
-        .createNotificationChannel(
-            new android.app.NotificationChannel(
-                "keyword", "Keyword alerts", android.app.NotificationManager.IMPORTANCE_HIGH));
+        .deleteNotificationChannel("keyword");
   }
 
   private void submit(Runnable task) {
@@ -120,90 +93,83 @@ public final class CaptureTools {
   }
 
   private void captured(File partial) {
-    submit(
-        () -> {
-          try {
-            if (partial.length() == 0) throw new IOException("Empty trace");
-            File file = traces.complete(partial);
-            service.message = "Saved capture to Library.";
-          } catch (IOException e) {
-            partial.delete();
-            service.message = "This capture could not be saved. Check free storage and try again.";
-          }
-        });
+    // Capture callbacks already run off the UI thread. Complete even if the service just stopped.
+    try {
+      if (partial.length() == 0) throw new IOException("Empty trace");
+      traces.complete(partial);
+      service.message = "Saved capture to Library.";
+    } catch (IOException e) {
+      partial.delete();
+      service.message = "This capture could not be saved. Check free storage and try again.";
+    }
   }
 
   public String summary() {
     return (gps ? " GPS" : "")
-        + (camera.isRunning() ? " camera" : "")
-        + (screen.isRunning() ? " screen" : "")
-        + (keywords.isRunning() ? " keywords" : "");
+        + (camera.isCapturing()
+            ? " // " + camera.status()
+            : commands.isRunning() ? " // camera commands" : "")
+        + (screen.isRunning() ? " screen" : "");
   }
 
   public boolean wanted(String tool) {
     return service
         .getSharedPreferences(RecordingService.PREFS, 0)
-        .getBoolean(tool + "_enabled", false);
+        .getBoolean(tool.equals("camera") ? "voice_camera_enabled" : tool + "_enabled", false);
   }
 
-  public void setEnabled(String tool, boolean enabled, String words) {
-    if (!java.util.Arrays.asList("gps", "camera", "keywords").contains(tool))
+  public void setEnabled(String tool, boolean enabled, String unused) {
+    if (!java.util.Arrays.asList("gps", "camera").contains(tool))
       throw new IllegalArgumentException("Unknown tool");
-    if (tool.equals("keywords") && enabled && !validKeywords(words))
-      throw new IllegalArgumentException("Enter keywords using letters, spaces or commas.");
-    android.content.SharedPreferences.Editor edit =
-        service
-            .getSharedPreferences(RecordingService.PREFS, 0)
-            .edit()
-            .putBoolean(tool + "_enabled", enabled);
-    if (tool.equals("keywords")) edit.putString("keywords", words.trim());
-    edit.apply();
+    service
+        .getSharedPreferences(RecordingService.PREFS, 0)
+        .edit()
+        .putBoolean(tool.equals("camera") ? "voice_camera_enabled" : tool + "_enabled", enabled)
+        .apply();
     if (!enabled) {
       if (tool.equals("gps")) gps(false);
       if (tool.equals("camera")) camera(false);
-      if (tool.equals("keywords")) keywords(false, words);
     } else if (service.isCapturing()) restoreConfigured();
     else service.message = "Preference saved. This tool will start when recording starts.";
-  }
-
-  public static boolean validKeywords(String words) {
-    return words != null
-        && !words.trim().isEmpty()
-        && words.length() <= 200
-        && words.matches("[\\p{L} ,;'-]+")
-        && words.matches("(?s).*\\p{L}.*");
   }
 
   public void restoreConfigured() {
     if (!service.isCapturing()) return;
     if (wanted("gps") && !gps) gps(true);
-    if (wanted("camera") && !camera.isRunning()) camera(true);
-    if (wanted("keywords")) {
-      String words =
-          service.getSharedPreferences(RecordingService.PREFS, 0).getString("keywords", "");
-      if (keywords.isRunning() && words.equals(activeWords)) return;
-      if (keywords.isRunning()) keywords.stop();
-      if (validKeywords(words)) keywords(true, words);
-      else
-        service.message = "Keyword alerts are enabled. Add words in Tools to start detecting them.";
-    }
+    if (wanted("camera")) camera(true);
   }
 
   public void camera(boolean enable) {
-    if (enable && camera.isRunning()) return;
-    if (!enable) {
+    if (!enable || service.isPlaybackCapture()) {
+      commands.stop();
       camera.stop();
+      service.refreshOptionalTypes();
+      if (enable)
+        service.message =
+            "Camera commands need microphone recording. Switch audio source in Tools.";
+      return;
+    }
+    android.content.SharedPreferences prefs =
+        service.getSharedPreferences(RecordingService.PREFS, 0);
+    camera.configure(prefs.getInt("camera_seconds", 30));
+    if (!camera.isRunning() && service.promoteOptional(ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA))
+      camera.start();
+    if (!camera.isRunning()) {
+      service.message = "Camera permission or hardware is unavailable. Audio recording continues.";
+      commands.stop();
       service.refreshOptionalTypes();
       return;
     }
-    if (service.promoteOptional(ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)) {
-      camera.configure(1, 15000, 15000, false, 5);
-      camera.start();
+    String back = prefs.getString("camera_back_phrase", CameraCommand.BACK);
+    String front = prefs.getString("camera_front_phrase", CameraCommand.FRONT);
+    String signature = back + "\n" + front;
+    if (!commands.isRunning() || !signature.equals(activeWords)) {
+      activeWords = signature;
+      commands.start(back, front);
       service.message =
-          camera.isRunning()
-              ? "Shake camera armed // four swings, then hold still. Rear camera only, silent"
-                  + " 5-second clips."
-              : "Camera or accelerometer unavailable.";
+          commands.status() == CameraCommandDetector.Status.NO_MODEL
+              ? "Download the English speech model to use camera commands."
+              : "Camera commands are starting.";
     }
   }
 
@@ -234,27 +200,6 @@ public final class CaptureTools {
     service.refreshOptionalTypes();
   }
 
-  public void keywords(boolean enabled, String words) {
-    if (!enabled) {
-      keywords.stop();
-      return;
-    }
-    if (!service.isEnabled()) {
-      service.message = "Start recording to begin detecting keywords.";
-      return;
-    }
-    if (!validKeywords(words)) {
-      service.message = "Enter keywords using letters, spaces or commas.";
-      return;
-    }
-    activeWords = words;
-    keywords.start(words, 48000);
-    service.message =
-        keywords.hasModel()
-            ? "Keyword alerts are starting."
-            : "Download the English speech model to detect keywords.";
-  }
-
   public void pcm(short[] samples, int count) {
     long now = SystemClock.elapsedRealtime();
     if (now >= nextSync
@@ -262,12 +207,13 @@ public final class CaptureTools {
       nextSync = now + 15 * 60 * 1000L;
       sync.sync();
     }
-    if (!keywords.isRunning()) return;
+    camera.feed(samples, count, SystemClock.elapsedRealtimeNanos());
+    if (!commands.isRunning()) return;
     for (int i = 0; i < count; i++) {
       pcmBytes[2 * i] = (byte) samples[i];
       pcmBytes[2 * i + 1] = (byte) (samples[i] >> 8);
     }
-    keywords.feed(pcmBytes, 0, count * 2);
+    commands.feed(pcmBytes, count * 2);
   }
 
   private final LocationListener locationListener =
@@ -345,7 +291,7 @@ public final class CaptureTools {
       partial =
           TraceStore.uniqueFile(
               traces.directory(), TraceStore.timestampName(track.firstFixMillis()), ".gpx");
-      track.writeTo(partial, "Echo location trace", false);
+      track.writeTo(partial, "echo location trace", false);
       traces.complete(partial);
       track.acknowledgeWritten();
       service.message = "Location data saved.";
@@ -357,27 +303,16 @@ public final class CaptureTools {
     }
   }
 
-  public void note(String text) {
-    submit(
-        () -> {
-          try {
-            File file = traces.text("_note", ".txt", text);
-            service.message = "Saved note to Library.";
-          } catch (IOException e) {
-            service.message = "Could not save note.";
-          }
-        });
-  }
-
   public void stop() {
     camera.stop();
     screen.stop();
-    keywords.stop();
+    commands.stop();
     gps(false);
   }
 
   public void close() {
     stop();
+    camera.close();
     sync.close();
     io.shutdown();
   }

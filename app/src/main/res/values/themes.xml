@@ -1,5 +1,22 @@
 <resources>
     <style name="Theme.Echo" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="fontFamily">@font/space_grotesk</item>
+        <item name="android:fontFamily">@font/space_grotesk</item>
+        <item name="textAppearanceDisplayLarge">@style/TextAppearance.Echo.DisplayLarge</item>
+        <item name="textAppearanceDisplayMedium">@style/TextAppearance.Echo.DisplayMedium</item>
+        <item name="textAppearanceDisplaySmall">@style/TextAppearance.Echo.DisplaySmall</item>
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.Echo.HeadlineLarge</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.Echo.HeadlineMedium</item>
+        <item name="textAppearanceHeadlineSmall">@style/TextAppearance.Echo.HeadlineSmall</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.Echo.TitleLarge</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.Echo.TitleMedium</item>
+        <item name="textAppearanceTitleSmall">@style/TextAppearance.Echo.TitleSmall</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.Echo.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.Echo.BodyMedium</item>
+        <item name="textAppearanceBodySmall">@style/TextAppearance.Echo.BodySmall</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.Echo.LabelLarge</item>
+        <item name="textAppearanceLabelMedium">@style/TextAppearance.Echo.LabelMedium</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.Echo.LabelSmall</item>
         <item name="colorPrimary">@color/echo_primary</item>
         <item name="colorOnPrimary">@color/echo_on_primary</item>
         <item name="colorPrimaryContainer">@color/echo_primary_container</item>
